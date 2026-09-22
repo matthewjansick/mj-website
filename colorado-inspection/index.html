@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Colorado Rebuilt Inspection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#EEF1F2;
+  --paper:#FFFFFF;
+  --ink:#172026;
+  --ink-2:#4A5862;
+  --ink-3:#7B8993;
+  --rule:#D5DCE0;
+  --rule-2:#E4E9EC;
+  --accent:#C98A00;
+  --accent-ink:#1A1400;
+  --accent-soft:#FBF1D6;
+  --steel:#2E4A5C;
+  --pass:#1E7A4C;
+  --pass-soft:#E1F2E8;
+  --fail:#B3261E;
+  --fail-soft:#F9E3E1;
+  --warn:#9A6400;
+  --warn-soft:#FBEFD3;
+  --na:#66737C;
+  --na-soft:#E8ECEE;
+  --shadow:0 1px 2px rgba(23,32,38,.06),0 4px 16px rgba(23,32,38,.06);
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#10171B;--paper:#182227;--ink:#E6ECEF;--ink-2:#A9B6BE;--ink-3:#7C8B94;
+    --rule:#2B3840;--rule-2:#223038;--accent:#E7AE2B;--accent-ink:#1A1400;--accent-soft:#3A2F12;
+    --steel:#8FB3C9;--pass:#5CC98E;--pass-soft:#16332A;--fail:#F2837A;--fail-soft:#3A1E1D;
+    --warn:#E9B54A;--warn-soft:#3A2E14;--na:#94A3AC;--na-soft:#243037;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#10171B;--paper:#182227;--ink:#E6ECEF;--ink-2:#A9B6BE;--ink-3:#7C8B94;
+  --rule:#2B3840;--rule-2:#223038;--accent:#E7AE2B;--accent-ink:#1A1400;--accent-soft:#3A2F12;
+  --steel:#8FB3C9;--pass:#5CC98E;--pass-soft:#16332A;--fail:#F2837A;--fail-soft:#3A1E1D;
+  --warn:#E9B54A;--warn-soft:#3A2E14;--na:#94A3AC;--na-soft:#243037;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--ground);color:var(--ink);font:15px/1.5 var(--body);padding-inline:16px;padding-block:20px 64px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:20px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+p{margin:0}
+a{color:var(--steel)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font:600 12px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+
+/* Header / vehicle card */
+.head{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;align-items:stretch}
+@media (max-width:760px){.head{grid-template-columns:1fr}}
+.vehicle{background:var(--paper);border:1px solid var(--rule);border-radius:6px;box-shadow:var(--shadow);padding:20px;display:grid;gap:16px}
+.vehicle h1{font-size:clamp(30px,5vw,42px);font-weight:700;letter-spacing:.01em}
+.vehicle .sub{color:var(--ink-2)}
+.specs{display:flex;flex-wrap:wrap;gap:6px}
+.spec{font:500 12px/1 var(--mono);padding:6px 8px;border:1px solid var(--rule);border-radius:3px;color:var(--ink-2);background:var(--ground)}
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:560px){.fields{grid-template-columns:1fr}}
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:12px;font-weight:600;color:var(--ink-2)}
+.field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);min-width:0}
+.field.vin{grid-column:1/-1}
+.field.vin input{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;font-size:16px}
+.hint{font-size:12px;color:var(--ink-3)}
+.hint.ok{color:var(--pass)}.hint.bad{color:var(--fail)}.hint.warn{color:var(--warn)}
+
+/* Readiness tag — styled like a shop hang-tag */
+.tag{position:relative;background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:22px 20px 20px;display:grid;gap:14px;box-shadow:var(--shadow)}
+.tag::before{content:"";position:absolute;top:14px;right:16px;width:14px;height:14px;border-radius:50%;background:var(--ground);box-shadow:inset 0 0 0 2px rgba(0,0,0,.15)}
+.tag .eyebrow{color:rgba(26,20,0,.7)}
+.score{font:700 64px/0.9 var(--display);font-variant-numeric:tabular-nums}
+.score small{font-size:24px;font-weight:600;margin-left:4px}
+.verdict{font:600 20px/1.15 var(--display);letter-spacing:.02em;text-transform:uppercase}
+.bars{display:grid;gap:6px}
+.bar{display:grid;grid-template-columns:78px 1fr 44px;gap:8px;align-items:center;font-size:12px;font-weight:500}
+.bar .track{height:6px;background:rgba(0,0,0,.14);border-radius:3px;overflow:hidden}
+.bar .fill{height:100%;background:var(--accent-ink);border-radius:3px;transition:width .3s}
+.bar .n{text-align:right;font-family:var(--mono)}
+@media (prefers-reduced-motion:reduce){.bar .fill{transition:none}}
+
+/* Blockers */
+.blockers{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--fail);border-radius:6px;padding:14px 16px;display:grid;gap:8px}
+.blockers.clear{border-left-color:var(--pass)}
+.blockers h2{font-size:20px;font-weight:600}
+.blockers ul{margin:0;padding-left:18px;display:grid;gap:3px;color:var(--ink-2);font-size:14px}
+.blockers ul li b{color:var(--ink);font-weight:600}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--rule);position:sticky;top:env(safe-area-inset-top,0px);background:var(--ground);z-index:5;padding-top:6px;scrollbar-width:none}
+.tab{flex:0 0 auto;border:0;background:none;padding:10px 14px 11px;font:600 17px/1 var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;display:flex;gap:8px;align-items:center}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .count{font:500 11px/1 var(--mono);padding:3px 5px;border-radius:3px;background:var(--na-soft);color:var(--ink-2);letter-spacing:0}
+.tab .count.done{background:var(--pass-soft);color:var(--pass)}
+.tab .count.bad{background:var(--fail-soft);color:var(--fail)}
+
+.panel{display:grid;gap:16px}
+.intro{color:var(--ink-2);max-width:68ch}
+.callout{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:6px;padding:12px 14px;font-size:14px;max-width:none}
+.callout b{font-weight:600}
+
+/* Sheet: groups of line items */
+.sheet{background:var(--paper);border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.sheet-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--ground) 55%,var(--paper))}
+.sheet-head h3{font-size:20px;font-weight:600;letter-spacing:.02em}
+.sheet-head .meta{font:500 12px/1 var(--mono);color:var(--ink-3);white-space:nowrap}
+.item{display:grid;grid-template-columns:1fr auto;gap:6px 16px;padding:12px 16px;border-top:1px solid var(--rule-2);align-items:center}
+.item:first-of-type{border-top:0}
+.item .t{font-weight:500}
+.item .d{grid-column:1;font-size:13px;color:var(--ink-3);max-width:70ch}
+.item .ctl{grid-row:1/span 2;grid-column:2;justify-self:end}
+@media (max-width:560px){.item{grid-template-columns:1fr}.item .ctl{grid-row:auto;grid-column:1;justify-self:start}}
+.req{font:600 10px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--fail);margin-left:6px;vertical-align:2px}
+
+/* Pass / Fix / N/A segmented control */
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.seg button{border:0;background:var(--paper);padding:7px 12px;font:600 13px/1 var(--body);color:var(--ink-3);cursor:pointer;min-width:52px}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"][data-v="pass"]{background:var(--pass-soft);color:var(--pass)}
+.seg button[aria-pressed="true"][data-v="fail"]{background:var(--fail-soft);color:var(--fail)}
+.seg button[aria-pressed="true"][data-v="na"]{background:var(--na-soft);color:var(--na)}
+.seg button:hover{color:var(--ink)}
+
+/* Checkbox */
+.chk{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink-3)}
+.chk input{appearance:none;width:22px;height:22px;border:1.5px solid var(--rule);border-radius:4px;display:grid;place-items:center;background:var(--paper);cursor:pointer;margin:0}
+.chk input:checked{background:var(--pass);border-color:var(--pass)}
+.chk input:checked::after{content:"";width:6px;height:11px;border:solid var(--paper);border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.chk input:checked+span{color:var(--pass)}
+
+textarea.notes{width:100%;min-height:64px;border:0;border-top:1px solid var(--rule-2);padding:10px 16px;background:transparent;resize:vertical;font-size:14px;display:block}
+textarea.notes::placeholder{color:var(--ink-3)}
+
+/* Receipts ledger */
+.ledger-wrap{overflow-x:auto}
+table.ledger{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
+.ledger th{font:600 11px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:10px 8px;border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--ground) 55%,var(--paper))}
+.ledger td{padding:6px 8px;border-bottom:1px solid var(--rule-2);vertical-align:middle}
+.ledger td input,.ledger td select{width:100%;padding:6px 8px;border:1px solid transparent;border-radius:3px;background:transparent;min-width:0}
+.ledger td input:hover,.ledger td select:hover{border-color:var(--rule)}
+.ledger td input:focus,.ledger td select:focus{border-color:var(--accent);background:var(--paper)}
+.ledger td.num input{text-align:right;font-family:var(--mono)}
+.ledger td.vin input{font-family:var(--mono);text-transform:uppercase;font-size:13px}
+.ledger tr.flag td.vin input{border-color:var(--fail);background:var(--fail-soft)}
+.ledger tr.example td{color:var(--ink-3)}
+.ledger tfoot td{font-weight:600;padding:10px 8px}
+.pill{display:inline-block;font:600 10px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;padding:4px 6px;border-radius:3px;background:var(--na-soft);color:var(--na);white-space:nowrap}
+.pill.ex{background:var(--accent-soft);color:var(--warn)}
+.rm{border:0;background:none;color:var(--ink-3);cursor:pointer;padding:4px 8px;font-size:18px;line-height:1}
+.rm:hover{color:var(--fail)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid var(--rule)}
+.btn{border:1px solid var(--rule);background:var(--paper);border-radius:4px;padding:8px 14px;font-weight:600;font-size:14px;cursor:pointer}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.danger{color:var(--fail)}
+.btn.danger.armed{background:var(--fail);color:#fff;border-color:var(--fail)}
+
+/* Day-of */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:grid;gap:10px;align-content:start}
+.card h3{font-size:20px;font-weight:600}
+.card ol,.card ul{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.kv dt{color:var(--ink-3)}
+.kv dd{margin:0}
+.copyrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+pre.summary{margin:0;white-space:pre-wrap;font:13px/1.5 var(--mono);background:var(--ground);border:1px solid var(--rule);border-radius:4px;padding:12px;max-height:340px;overflow:auto}
+.toast{font-size:13px;color:var(--pass);font-weight:600}
+.foot{font-size:12px;color:var(--ink-3);max-width:80ch}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="head">
+    <section class="vehicle" aria-labelledby="veh-title">
+      <div class="eyebrow">Georgia salvage → rebuilt title inspection</div>
+      <h1 id="veh-title">2004 Chevrolet Colorado Crew Cab</h1>
+      <div class="specs">
+        <span class="spec">3.5L Vortec I5 · L52</span>
+        <span class="spec">4-door crew cab · 5 seats</span>
+        <span class="spec">OBD-II</span>
+        <span class="spec">Front disc / rear drum</span>
+        <span class="spec">Full ladder frame</span>
+      </div>
+      <div class="fields">
+        <div class="field vin">
+          <label for="vin">VIN (17 characters, from the dash plate)</label>
+          <input id="vin" maxlength="17" autocomplete="off" spellcheck="false" placeholder="1GC_______4______">
+          <div class="hint" id="vin-hint">Position 10 should be <b class="mono">4</b> for a 2004 model year. The check digit is validated as you type.</div>
+        </div>
+        <div class="field">
+          <label for="loc">Inspection station</label>
+          <select id="loc">
+            <option value="marietta">AMP · Marietta</option>
+            <option value="atlanta">AMP · Atlanta (Welcome All Rd)</option>
+            <option value="jenkinsburg">AMP · Jenkinsburg</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="appt">Appointment</label>
+          <input id="appt" type="date">
+        </div>
+        <div class="field">
+          <label for="miles">Odometer</label>
+          <input id="miles" inputmode="numeric" class="mono" placeholder="e.g. 148,200">
+        </div>
+      </div>
+    </section>
+
+    <aside class="tag" aria-live="polite">
+      <div class="eyebrow">Inspection readiness</div>
+      <div class="score" id="score">0<small>%</small></div>
+      <div class="verdict" id="verdict">Not ready yet</div>
+      <div class="bars" id="bars"></div>
+    </aside>
+  </header>
+
+  <section class="blockers" id="blockers" aria-live="polite"></section>
+
+  <nav class="tabs" role="tablist" aria-label="Inspection sections">
+    <button class="tab" role="tab" id="tab-docs" aria-controls="p-docs" data-tab="docs">Paperwork <span class="count" id="c-docs"></span></button>
+    <button class="tab" role="tab" id="tab-photos" aria-controls="p-photos" data-tab="photos">Photos <span class="count" id="c-photos"></span></button>
+    <button class="tab" role="tab" id="tab-receipts" aria-controls="p-receipts" data-tab="receipts">Receipts <span class="count" id="c-receipts"></span></button>
+    <button class="tab" role="tab" id="tab-walk" aria-controls="p-walk" data-tab="walk">Truck check <span class="count" id="c-walk"></span></button>
+    <button class="tab" role="tab" id="tab-day" aria-controls="p-day" data-tab="day">Inspection day</button>
+  </nav>
+
+  <!-- PAPERWORK -->
+  <section class="panel" id="p-docs" role="tabpanel" aria-labelledby="tab-docs">
+    <p class="intro">Bring originals. AMP and the county tag office won't accept photocopies of the title. Items marked <span class="req" style="margin:0">Required</span> will stop the inspection if they're missing.</p>
+    <div id="docs-list"></div>
+  </section>
+
+  <!-- PHOTOS -->
+  <section class="panel" id="p-photos" role="tabpanel" aria-labelledby="tab-photos" hidden>
+    <p class="intro">If the title hasn't been rebuilt yet, you need photos of the truck <b>before any repairs were made</b>. Bring prints and keep the originals on your phone. Take the second group now so the inspector can compare them with the truck.</p>
+    <div id="photos-list"></div>
+  </section>
+
+  <!-- RECEIPTS -->
+  <section class="panel" id="p-receipts" role="tabpanel" aria-labelledby="tab-receipts" hidden>
+    <p class="intro">Every part used in the repair needs a receipt showing <b>you (or your rebuilder) as the buyer</b>. For <b>used parts</b>, the receipt must also list the <b>donor vehicle's VIN</b>. Rows without one are flagged in red. These are the same parts you'll list on Form T-129.</p>
+    <div class="sheet">
+      <div class="ledger-wrap">
+        <table class="ledger" aria-label="Parts and repair receipts">
+          <thead><tr>
+            <th style="width:22%">Part / repair</th>
+            <th style="width:16%">Vendor</th>
+            <th style="width:12%">Date</th>
+            <th style="width:10%">Condition</th>
+            <th style="width:22%">Donor VIN (used parts)</th>
+            <th style="width:10%;text-align:right">Cost</th>
+            <th style="width:6%">Have it</th>
+            <th style="width:2%"></th>
+          </tr></thead>
+          <tbody id="ledger-body"></tbody>
+          <tfoot><tr><td colspan="5" style="text-align:right;color:var(--ink-3)">Parts &amp; labor total</td><td class="mono" style="text-align:right" id="ledger-total">$0.00</td><td colspan="2"></td></tr></tfoot>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="add-row" type="button">Add a receipt</button>
+        <button class="btn" id="clear-examples" type="button">Remove example rows</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- WALKAROUND -->
+  <section class="panel" id="p-walk" role="tabpanel" aria-labelledby="tab-walk" hidden>
+    <p class="callout"><b>Timing matters:</b> Georgia requires the rebuilt inspection <b>after repairs are finished but before the truck is painted</b>. Repaired panels can be in primer. AMP does a full safety and structural inspection, so go through each item below and mark it <b>Pass</b>, <b>Fix</b> or <b>N/A</b>.</p>
+    <div id="walk-list"></div>
+  </section>
+
+  <!-- DAY OF -->
+  <section class="panel" id="p-day" role="tabpanel" aria-labelledby="tab-day" hidden>
+    <div class="cols">
+      <div class="card">
+        <h3>Station</h3>
+        <dl class="kv" id="station"></dl>
+        <p class="hint">Fees and addresses come from AMP's listings. Confirm them when you book at ampautoinspections.com.</p>
+      </div>
+      <div class="card">
+        <h3>Bring with you</h3>
+        <ul id="bring"></ul>
+      </div>
+      <div class="card">
+        <h3>Getting the truck there</h3>
+        <ul>
+          <li>A salvage-titled vehicle can't be registered or tagged, so ask AMP when you book whether you should tow or trailer the truck to the appointment.</li>
+          <li>Arrive with a full check: every light working, the SRS light going out after start-up and no warning lamps on the dash.</li>
+          <li>Leave the bed and cab empty so the inspector can see the floor pans, cab mounts and bed mounts.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>After you pass</h3>
+        <ol>
+          <li>Keep the inspection paperwork AMP gives you.</li>
+          <li>Go to your county tag office with the <b>original salvage title</b>, a signed <b>MV-1</b>, a signed <b>T-129</b>, your photos and receipts, and your ID.</li>
+          <li>Georgia issues a title branded <b>“Rebuilt”</b>. Then register and tag the truck as usual.</li>
+          <li><b>Emissions:</b> In the 13 metro Atlanta counties (Cobb included), gasoline vehicles 3–24 model years old need a Georgia Clean Air Force emissions test to register. That's separate from AMP's inspection. Check whether your county and model year apply.</li>
+          <li>Paint the truck now that it has passed.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="card">
+      <div class="copyrow">
+        <h3 style="margin-right:auto">Inspection summary</h3>
+        <span class="toast" id="copied" hidden>Copied</span>
+        <button class="btn primary" id="copy" type="button">Copy summary</button>
+        <button class="btn danger" id="reset" type="button">Reset all</button>
+      </div>
+      <pre class="summary" id="summary" tabindex="0"></pre>
+      <p class="hint">Your progress is saved in this browser only. Copy the summary to text or email it to yourself as a backup.</p>
+    </div>
+  </section>
+
+  <p class="foot">Based on AMP Auto Inspections' published guidance (safety and structural inspection, pre-repair photos, all receipts, headliner rules for curtain airbags, tires, glass and lights) and Georgia DOR rebuilt-title rules (inspection before paint; forms MV-1 and T-129; receipts with donor VINs for used parts). The items specific to the truck are a self-check aid, not the official inspection standard. The inspector's decision is final.</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Content ---------- */
+var DOCS = [
+  {id:"title", t:"Original salvage title", d:"In your name or properly assigned to you. No photocopies. If you don't have one, you need a court order and a completed T-22B instead.", req:true},
+  {id:"t129", t:"Form T-129: Labor and Parts Certification", d:"Completed and signed. Lists every part and the labor used to rebuild the truck, and must match your receipts.", req:true},
+  {id:"mv1", t:"Form MV-1: Title/Tag Application", d:"Completed and signed. Needed at the tag office to apply for the rebuilt title after you pass.", req:true},
+  {id:"receipts", t:"All parts and repair receipts (printed)", d:"Buyer is you or your rebuilder. Used parts list the donor VIN. Keep these in the same order as the Receipts tab.", req:true},
+  {id:"prephotos", t:"Pre-repair photos (printed)", d:"Photos of the truck in its wrecked condition before any repair. Required if the title hasn't been rebuilt yet.", req:true},
+  {id:"id", t:"Driver's license or state ID", d:"Must match the name on the title or assignment.", req:true},
+  {id:"booking", t:"Booking confirmation and deposit receipt", d:"Marietta takes a $50 deposit online, with the $75 balance due at check-in.", req:false},
+  {id:"courtorder", t:"Court order and T-22B (only if there's no title)", d:"Mark N/A if you have the original title. You may need a title bond without these.", req:false, na:true}
+];
+
+var PHOTOS = [
+  {group:"Before repair (required)", items:[
+    {id:"p-front", t:"Front: full view of the damage", d:"Bumper, grille, headlamps, radiator support, hood."},
+    {id:"p-driver", t:"Driver side: full length", d:"Fenders, both driver-side doors, cab corner, bed side."},
+    {id:"p-pass", t:"Passenger side: full length", d:"Same angles on the passenger side."},
+    {id:"p-rear", t:"Rear: tailgate, bumper, bed", d:"Include the taillamps and hitch area."},
+    {id:"p-close", t:"Close-ups of every damaged area", d:"Show how deep the damage goes: creases, buckled panels, broken mounts."},
+    {id:"p-under", t:"Frame and suspension damage", d:"Any bent frame rail, control arm, axle or steering part."},
+    {id:"p-airbag", t:"Interior with deployed airbags or belts", d:"Steering wheel, dash, roof rails and headliner. Mark N/A if nothing deployed.", na:true}
+  ]},
+  {group:"Now (for the inspector to compare)", items:[
+    {id:"p-vin", t:"Dash VIN plate through the windshield", d:"Lower driver-side corner. Must be readable and match the title."},
+    {id:"p-jamb", t:"Driver door-jamb certification label", d:"Shows the build date, GVWR and VIN. It must be present and not tampered with."},
+    {id:"p-odo", t:"Odometer reading", d:"Key on, showing the full mileage."},
+    {id:"p-primer", t:"Repaired areas in primer (not painted)", d:"Shows the repair was done before paint, as Georgia requires."}
+  ]}
+];
+
+var WALK = [
+  {id:"ident", group:"Identification", items:[
+    {id:"w-vinplate", t:"Dash VIN plate intact and readable", d:"Riveted at the lower-left windshield. No damage, loose rivets or signs it was swapped."},
+    {id:"w-vinmatch", t:"VIN matches the title, T-129 and door label", d:"All 17 characters, compared with every document."},
+    {id:"w-jamb", t:"Door-jamb certification label present", d:"On the driver door or B-pillar. If the door was replaced, move or keep the original label per GM procedure."},
+    {id:"w-odo", t:"Odometer working and readable", d:"The instrument cluster lights up and shows the mileage."}
+  ]},
+  {id:"srs", group:"Airbags & restraints", items:[
+    {id:"w-srslamp", t:"AIRBAG/SRS lamp comes on at key-on, then goes out", d:"It should cycle for a few seconds and then stay off. A lamp that stays on fails."},
+    {id:"w-drvbag", t:"Driver airbag (steering wheel) installed", d:"OEM module, correct connector, clockspring working."},
+    {id:"w-psgbag", t:"Passenger airbag (dash) installed", d:"Dash panel seated and not cracked. The passenger airbag status indicator works correctly, if equipped."},
+    {id:"w-curtain", t:"Roof-rail curtain airbags (if equipped)", d:"If they deployed, the modules and a new headliner must be installed. A creased or repaired headliner is not accepted.", na:true},
+    {id:"w-sdm", t:"Airbag control module (SDM) replaced or reset after deployment", d:"GM requires this after a deployment. Mark N/A if nothing deployed.", na:true},
+    {id:"w-belts", t:"All 5 seat belts latch, lock and retract", d:"Front buckets and rear bench. Replace any belt that was loaded in the crash."}
+  ]},
+  {id:"lights", group:"Lights, horn & electrical", items:[
+    {id:"w-head", t:"Headlamps: low and high beam", d:"Both sides aimed and working. Lenses not cracked or fogged through."},
+    {id:"w-park", t:"Parking lamps, side markers and license-plate lamp"},
+    {id:"w-tail", t:"Taillamps and both brake lamps"},
+    {id:"w-chmsl", t:"Third brake lamp (cab-mounted)", d:"Above the rear window. It often gets missed after a rear-end repair."},
+    {id:"w-turn", t:"Turn signals front and rear, plus hazards", d:"Blink at a normal rate. Fast blinking means a bulb is out."},
+    {id:"w-rev", t:"Reverse lamps"},
+    {id:"w-horn", t:"Horn works"},
+    {id:"w-dash", t:"No warning lamps on the dash", d:"ABS, brake, charging and check-engine lamps all go out after start-up."}
+  ]},
+  {id:"glass", group:"Glass, mirrors & wipers", items:[
+    {id:"w-wind", t:"Windshield: no chips or cracks", d:"AMP requires front and rear glass free of chips and cracks."},
+    {id:"w-rearglass", t:"Rear window: no chips or cracks"},
+    {id:"w-sideglass", t:"Door glass intact; all 4 windows go up and down"},
+    {id:"w-mirrors", t:"Both outside mirrors and the inside mirror secure"},
+    {id:"w-wipers", t:"Wipers and washers work on every speed"}
+  ]},
+  {id:"tires", group:"Tires & wheels", items:[
+    {id:"w-tread", t:"Tread above the wear bars on all 4 tires", d:"No cords showing and no bulges or sidewall cuts."},
+    {id:"w-match", t:"Tires match in size on each axle"},
+    {id:"w-lugs", t:"All lug nuts present and torqued"},
+    {id:"w-wheels", t:"Wheels not bent or cracked"},
+    {id:"w-spare", t:"Spare and jack present (under the bed)", na:true}
+  ]},
+  {id:"brakes", group:"Brakes", items:[
+    {id:"w-pedal", t:"Brake pedal firm, not spongy"},
+    {id:"w-front", t:"Front discs and pads serviceable", d:"Rotors not scored below spec. Calipers not leaking."},
+    {id:"w-rear", t:"Rear drums and shoes serviceable", d:"No leaking wheel cylinders."},
+    {id:"w-lines", t:"Brake lines and hoses not kinked, rusted through or leaking", d:"Check any line near crash damage especially closely."},
+    {id:"w-pbrake", t:"Parking brake holds the truck on a grade"}
+  ]},
+  {id:"steer", group:"Steering & suspension", items:[
+    {id:"w-play", t:"No excess play in the steering wheel"},
+    {id:"w-tierod", t:"Tie rods, ball joints and idler parts tight"},
+    {id:"w-shocks", t:"Shocks and struts not leaking; springs not broken"},
+    {id:"w-align", t:"Tracks straight; wheel alignment done after the repair", d:"Keep the alignment printout with your receipts."}
+  ]},
+  {id:"frame", group:"Frame & structure", items:[
+    {id:"w-rails", t:"Frame rails straight: no kinks, cracks or heat marks", d:"Structural inspection is the core of a Georgia rebuilt inspection."},
+    {id:"w-welds", t:"Frame repairs follow GM procedures", d:"Keep any frame-straightening or measurement report with your receipts."},
+    {id:"w-core", t:"Radiator core support solid and square"},
+    {id:"w-pillars", t:"A, B and C pillars, rockers and roof undamaged", d:"The crew cab's rear doors hang off the B and C pillars, so check that the door gaps are even."},
+    {id:"w-mounts", t:"Cab mounts and bed mounts all present and tight"},
+    {id:"w-bumpers", t:"Front and rear bumpers attached solidly to the frame"}
+  ]},
+  {id:"body", group:"Doors, hood & tailgate", items:[
+    {id:"w-doors", t:"All 4 doors open and latch from inside and outside"},
+    {id:"w-childlock", t:"Rear door child locks work"},
+    {id:"w-hood", t:"Hood latch and safety catch both engage"},
+    {id:"w-gate", t:"Tailgate latches on both sides; support cables intact"},
+    {id:"w-fuel", t:"Fuel door and cap seal"}
+  ]},
+  {id:"power", group:"Engine, exhaust & fuel", items:[
+    {id:"w-start", t:"3.5L I5 starts, idles smoothly and has no check-engine lamp", d:"Scan for OBD-II codes the week before and clear anything left over from the crash."},
+    {id:"w-leaks", t:"No fuel, oil or coolant leaks"},
+    {id:"w-exhaust", t:"Exhaust sealed from the manifold to the tailpipe", d:"Catalytic converter present. No holes, and hangers attached."},
+    {id:"w-cool", t:"Radiator, condenser and fan working after a front-end repair"},
+    {id:"w-battery", t:"Battery secured with a hold-down"}
+  ]},
+  {id:"paint", group:"Paint status", items:[
+    {id:"w-nopaint", t:"Repaired panels NOT painted yet", d:"Georgia requires the inspection after repair but before paint. Leave repairs in primer."}
+  ]}
+];
+
+var STATIONS = {
+  marietta:{name:"AMP Auto Inspections · Marietta", addr:"1011 S Marietta Pkwy SE, Unit 4, Marietta, GA 30060", phone:"(470) 880-9735", fee:"$125 total: $50 deposit when you book online, $75 at check-in"},
+  atlanta:{name:"AMP Auto Inspections · Atlanta", addr:"4125 Welcome All Rd SW, Atlanta, GA 30349", phone:"See ampautoinspections.com", fee:"Confirm when booking"},
+  jenkinsburg:{name:"AMP Auto Inspections · Jenkinsburg", addr:"See ampautoinspections.com", phone:"See ampautoinspections.com", fee:"Confirm when booking"}
+};
+
+var EXAMPLES = [
+  {part:"Front bumper assembly", vendor:"Example: LKQ", date:"", cond:"used", vin:"", cost:"180", have:false, ex:true},
+  {part:"Driver headlamp assembly", vendor:"Example: RockAuto", date:"", cond:"new", vin:"", cost:"96.50", have:false, ex:true},
+  {part:"Body labor: fender and door alignment", vendor:"Example: shop invoice", date:"", cond:"labor", vin:"", cost:"650", have:false, ex:true}
+];
+
+/* ---------- State ---------- */
+var KEY = "colorado-rebuilt-inspection-v1";
+function blank(){ return {checks:{}, docs:{}, photos:{}, notes:{}, receipts:EXAMPLES.map(function(r){return Object.assign({},r);}), vin:"", loc:"marietta", appt:"", miles:"", tab:"docs"}; }
+var S = blank();
+try{ var raw = localStorage.getItem(KEY); if(raw){ S = Object.assign(blank(), JSON.parse(raw)); } }catch(e){}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+
+/* ---------- VIN ---------- */
+var TRANS = {A:1,B:2,C:3,D:4,E:5,F:6,G:7,H:8,J:1,K:2,L:3,M:4,N:5,P:7,R:9,S:2,T:3,U:4,V:5,W:6,X:7,Y:8,Z:9};
+var WEIGHTS = [8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2];
+function vinCheck(v){
+  if(v.length!==17) return {state:"partial"};
+  if(/[IOQ]/.test(v)) return {state:"bad", msg:"VINs never contain I, O or Q. Check for a 1, 0 or 9 instead."};
+  if(!/^[A-HJ-NPR-Z0-9]{17}$/.test(v)) return {state:"bad", msg:"A VIN can only contain letters and numbers."};
+  var sum=0;
+  for(var i=0;i<17;i++){ var c=v[i]; var n=/[0-9]/.test(c)?+c:TRANS[c]; sum+=n*WEIGHTS[i]; }
+  var cd=sum%11; cd = cd===10?"X":String(cd);
+  if(v[8]!==cd) return {state:"bad", msg:"Check digit (position 9) doesn't match. Re-read the plate; one character is probably wrong."};
+  if(v[9]!=="4") return {state:"warn", msg:"The VIN is valid, but position 10 is “"+v[9]+"”, not “4” (2004). Confirm the model year on the title."};
+  if(v[0]!=="1") return {state:"warn", msg:"The VIN is valid. It doesn't start with 1 (built in the USA), which is unusual for a Colorado."};
+  return {state:"ok", msg:"The VIN is valid: check digit matches and it's a 2004 model year. Make sure it matches the title exactly."};
+}
+function renderVin(){
+  var v=S.vin, h=$("vin-hint"), r=vinCheck(v);
+  h.className="hint";
+  if(!v){ h.innerHTML='Position 10 should be <b class="mono">4</b> for a 2004 model year. The check digit is validated as you type.'; return r; }
+  if(r.state==="partial"){ h.textContent=v.length+" of 17 characters"; return r; }
+  h.className="hint "+(r.state==="ok"?"ok":r.state==="warn"?"warn":"bad");
+  h.textContent=r.msg; return r;
+}
+
+/* ---------- Renderers ---------- */
+function seg(id, val, allowNa){
+  var opts=[["pass","Pass"],["fail","Fix"]]; if(allowNa!==false) opts.push(["na","N/A"]);
+  return '<div class="seg ctl" role="group" aria-label="Status">'+opts.map(function(o){
+    return '<button type="button" data-k="'+id+'" data-v="'+o[0]+'" aria-pressed="'+(val===o[0])+'">'+o[1]+'</button>';
+  }).join("")+'</div>';
+}
+function chk(store, id, label){
+  var on=!!S[store][id];
+  return '<label class="chk ctl"><input type="checkbox" id="'+store+'-'+id+'" data-store="'+store+'" data-id="'+id+'"'+(on?" checked":"")+'><span>'+label+'</span></label>';
+}
+function naChk(store,item){
+  // Items that may be N/A get a tri-state segmented control instead of a checkbox
+  var v=S[store][item.id]; var val=v===true?"pass":v==="na"?"na":v===false||v==null?"":v;
+  return '<div class="seg ctl" role="group" aria-label="Status">'+
+    '<button type="button" data-store="'+store+'" data-id="'+item.id+'" data-v="yes" aria-pressed="'+(val==="pass")+'" data-vv="pass">Have it</button>'+
+    '<button type="button" data-store="'+store+'" data-id="'+item.id+'" data-v="na" aria-pressed="'+(val==="na")+'">N/A</button></div>';
+}
+
+function renderDocs(){
+  var html='<div class="sheet"><div class="sheet-head"><h3>Documents to bring</h3><span class="meta" id="m-docs"></span></div>';
+  DOCS.forEach(function(d){
+    html+='<div class="item"><div class="t">'+esc(d.t)+(d.req?'<span class="req">Required</span>':'')+'</div>'+
+      (d.na?naChk("docs",d):chk("docs",d.id,"Have it"))+
+      '<div class="d">'+esc(d.d)+'</div></div>';
+  });
+  html+='</div>';
+  $("docs-list").innerHTML=html;
+}
+function renderPhotos(){
+  var html="";
+  PHOTOS.forEach(function(g,gi){
+    html+='<div class="sheet"><div class="sheet-head"><h3>'+esc(g.group)+'</h3><span class="meta" id="m-ph'+gi+'"></span></div>';
+    g.items.forEach(function(p){
+      html+='<div class="item"><div class="t">'+esc(p.t)+'</div>'+(p.na?naChk("photos",p):chk("photos",p.id,"Taken"))+(p.d?'<div class="d">'+esc(p.d)+'</div>':'')+'</div>';
+    });
+    html+='</div>';
+  });
+  $("photos-list").innerHTML=html;
+}
+function renderWalk(){
+  var html="";
+  WALK.forEach(function(g){
+    html+='<div class="sheet"><div class="sheet-head"><h3>'+esc(g.group)+'</h3><span class="meta" id="m-'+g.id+'"></span></div>';
+    g.items.forEach(function(it){
+      html+='<div class="item"><div class="t">'+esc(it.t)+'</div>'+seg(it.id,S.checks[it.id])+(it.d?'<div class="d">'+esc(it.d)+'</div>':'')+'</div>';
+    });
+    html+='<textarea class="notes" id="note-'+g.id+'" data-note="'+g.id+'" placeholder="Notes on '+esc(g.group.toLowerCase())+'…">'+esc(S.notes[g.id]||"")+'</textarea></div>';
+  });
+  $("walk-list").innerHTML=html;
+}
+function renderLedger(){
+  var body=$("ledger-body");
+  body.innerHTML=S.receipts.map(function(r,i){
+    var flag = r.cond==="used" && !/^[A-HJ-NPR-Z0-9]{17}$/i.test((r.vin||"").trim());
+    return '<tr class="'+(flag?"flag ":"")+(r.ex?"example":"")+'" data-i="'+i+'">'+
+      '<td><input id="r'+i+'-part" data-f="part" value="'+esc(r.part)+'" placeholder="Part or repair" aria-label="Part"> '+(r.ex?'<span class="pill ex">Example</span>':'')+'</td>'+
+      '<td><input id="r'+i+'-vendor" data-f="vendor" value="'+esc(r.vendor)+'" placeholder="Vendor" aria-label="Vendor"></td>'+
+      '<td><input id="r'+i+'-date" data-f="date" type="date" value="'+esc(r.date)+'" aria-label="Date"></td>'+
+      '<td><select id="r'+i+'-cond" data-f="cond" aria-label="Condition">'+[["new","New"],["used","Used"],["labor","Labor"]].map(function(o){return '<option value="'+o[0]+'"'+(r.cond===o[0]?" selected":"")+'>'+o[1]+'</option>';}).join("")+'</select></td>'+
+      '<td class="vin"><input id="r'+i+'-vin" data-f="vin" value="'+esc(r.vin)+'" maxlength="17" placeholder="'+(r.cond==="used"?"Required for used parts":"Not needed")+'" aria-label="Donor VIN"></td>'+
+      '<td class="num"><input id="r'+i+'-cost" data-f="cost" inputmode="decimal" value="'+esc(r.cost)+'" placeholder="0.00" aria-label="Cost"></td>'+
+      '<td><label class="chk"><input type="checkbox" id="r'+i+'-have" data-f="have"'+(r.have?" checked":"")+' aria-label="Receipt in hand"></label></td>'+
+      '<td><button class="rm" type="button" data-rm="'+i+'" aria-label="Remove row">×</button></td></tr>';
+  }).join("") || '<tr><td colspan="8" style="padding:18px;color:var(--ink-3)">No receipts yet. Add one for every part and repair.</td></tr>';
+  updateLedgerTotal();
+}
+function updateLedgerTotal(){
+  var t=S.receipts.reduce(function(a,r){ var n=parseFloat(String(r.cost).replace(/[^0-9.]/g,"")); return a+(isNaN(n)?0:n); },0);
+  $("ledger-total").textContent="$"+t.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+/* ---------- Scoring ---------- */
+function docsDone(){ var n=0; DOCS.forEach(function(d){ if(S.docs[d.id]===true||S.docs[d.id]==="na") n++; }); return n; }
+function photoItems(){ var a=[]; PHOTOS.forEach(function(g){ a=a.concat(g.items); }); return a; }
+function walkItems(){ var a=[]; WALK.forEach(function(g){ a=a.concat(g.items.map(function(i){ return Object.assign({group:g.group},i); })); }); return a; }
+
+function compute(){
+  var docsN=DOCS.length, docsD=docsDone();
+  var ph=photoItems(), phD=ph.filter(function(p){ return S.photos[p.id]===true||S.photos[p.id]==="na"; }).length;
+  var real=S.receipts.filter(function(r){ return !r.ex; });
+  var recOk=real.filter(function(r){ return r.have && !(r.cond==="used" && !/^[A-HJ-NPR-Z0-9]{17}$/i.test((r.vin||"").trim())); }).length;
+  var w=walkItems(), wPass=w.filter(function(i){ return S.checks[i.id]==="pass"||S.checks[i.id]==="na"; }).length;
+  var wFail=w.filter(function(i){ return S.checks[i.id]==="fail"; });
+
+  var blockers=[];
+  DOCS.forEach(function(d){ if(d.req && S.docs[d.id]!==true) blockers.push(["Paperwork", d.t]); });
+  wFail.forEach(function(i){ blockers.push([i.group, i.t]); });
+  real.forEach(function(r){ if(r.cond==="used" && !/^[A-HJ-NPR-Z0-9]{17}$/i.test((r.vin||"").trim())) blockers.push(["Receipts", (r.part||"Used part")+": donor VIN missing"]); });
+  real.forEach(function(r){ if(!r.have) blockers.push(["Receipts", (r.part||"Unnamed part")+": receipt not in hand"]); });
+  if(!real.length) blockers.push(["Receipts","No receipts logged yet"]);
+  var vr=vinCheck(S.vin); if(vr.state!=="ok"&&vr.state!=="warn") blockers.push(["Vehicle", S.vin?"VIN doesn't validate":"VIN not entered"]);
+
+  var parts=[
+    ["Paperwork",docsD,docsN],
+    ["Photos",phD,ph.length],
+    ["Receipts",recOk,Math.max(real.length,1)],
+    ["Truck",wPass,w.length]
+  ];
+  var pct = Math.round(parts.reduce(function(a,p){ return a+(p[1]/p[2]); },0)/parts.length*100);
+  return {parts:parts, pct:pct, blockers:blockers, wFail:wFail.length, real:real, recOk:recOk, docsD:docsD, phD:phD, ph:ph.length, wPass:wPass, w:w.length};
+}
+
+function renderSummary(){
+  var c=compute();
+  $("score").innerHTML=c.pct+'<small>%</small>';
+  $("verdict").textContent = c.blockers.length===0 && c.pct===100 ? "Ready to book" : c.blockers.length===0 ? "Almost there" : c.blockers.length+" item"+(c.blockers.length===1?"":"s")+" to clear";
+  $("bars").innerHTML=c.parts.map(function(p){
+    var w=Math.round(p[1]/p[2]*100);
+    return '<div class="bar"><span>'+p[0]+'</span><span class="track"><span class="fill" style="width:'+w+'%;display:block"></span></span><span class="n">'+p[1]+'/'+(p[0]==="Receipts"&&!c.real.length?0:p[2])+'</span></div>';
+  }).join("");
+
+  var b=$("blockers");
+  if(!c.blockers.length){
+    b.className="blockers clear";
+    b.innerHTML='<h2>Nothing blocking</h2><p class="intro">Every required document is in hand, no item is marked Fix, and every receipt checks out. Book the appointment at ampautoinspections.com.</p>';
+  } else {
+    b.className="blockers";
+    var shown=c.blockers.slice(0,8);
+    b.innerHTML='<h2>What would stop the inspection</h2><ul>'+shown.map(function(x){ return '<li><b>'+esc(x[0])+':</b> '+esc(x[1])+'</li>'; }).join("")+(c.blockers.length>8?'<li>…and '+(c.blockers.length-8)+' more</li>':'')+'</ul>';
+  }
+
+  function setCount(id, done, total, bad){
+    var el=$(id); el.textContent=done+"/"+total; el.className="count"+(bad?" bad":done===total&&total>0?" done":"");
+  }
+  setCount("c-docs",c.docsD,DOCS.length,false);
+  setCount("c-photos",c.phD,c.ph,false);
+  var recBad=c.real.some(function(r){ return r.cond==="used" && !/^[A-HJ-NPR-Z0-9]{17}$/i.test((r.vin||"").trim()); });
+  setCount("c-receipts",c.recOk,c.real.length,recBad);
+  setCount("c-walk",c.wPass,c.w,c.wFail>0);
+
+  var md=$("m-docs"); if(md) md.textContent=c.docsD+" of "+DOCS.length;
+  PHOTOS.forEach(function(g,gi){ var el=$("m-ph"+gi); if(el){ var d=g.items.filter(function(p){ return S.photos[p.id]===true||S.photos[p.id]==="na"; }).length; el.textContent=d+" of "+g.items.length; } });
+  WALK.forEach(function(g){
+    var el=$("m-"+g.id); if(!el) return;
+    var p=0,f=0; g.items.forEach(function(i){ if(S.checks[i.id]==="pass"||S.checks[i.id]==="na") p++; if(S.checks[i.id]==="fail") f++; });
+    el.textContent=p+" of "+g.items.length+(f?" · "+f+" to fix":"");
+    el.style.color=f?"var(--fail)":"";
+  });
+
+  // Day-of
+  var st=STATIONS[S.loc]||STATIONS.marietta;
+  $("station").innerHTML='<dt>Station</dt><dd>'+esc(st.name)+'</dd><dt>Address</dt><dd>'+esc(st.addr)+'</dd><dt>Phone</dt><dd class="mono">'+esc(st.phone)+'</dd><dt>Fee</dt><dd>'+esc(st.fee)+'</dd><dt>Date</dt><dd>'+(S.appt?esc(new Date(S.appt+"T12:00").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"})):'<span style="color:var(--ink-3)">Not booked yet</span>')+'</dd>';
+  $("bring").innerHTML=DOCS.filter(function(d){ return S.docs[d.id]!=="na"; }).map(function(d){
+    var have=S.docs[d.id]===true;
+    return '<li style="color:'+(have?"var(--ink)":"var(--fail)")+'">'+(have?"✓ ":"✗ ")+esc(d.t.replace(/ \(.*\)$/,""))+'</li>';
+  }).join("")+'<li>✓ The truck, with repairs finished and <b>not painted</b></li>';
+
+  $("summary").textContent=buildText(c);
+}
+
+function buildText(c){
+  var st=STATIONS[S.loc]||STATIONS.marietta, L=[];
+  L.push("2004 CHEVROLET COLORADO CREW CAB · 3.5L I5");
+  L.push("Georgia rebuilt-title inspection: self-check");
+  L.push("VIN: "+(S.vin||"(not entered)")+"   Odometer: "+(S.miles||"(not entered)"));
+  L.push("Station: "+st.name+" · "+st.addr);
+  L.push("Appointment: "+(S.appt||"not booked"));
+  L.push("Readiness: "+c.pct+"%");
+  L.push("");
+  L.push("PAPERWORK");
+  DOCS.forEach(function(d){ var v=S.docs[d.id]; L.push("  ["+(v===true?"x":v==="na"?"-":" ")+"] "+d.t); });
+  L.push("");
+  L.push("RECEIPTS ("+c.real.length+", "+$("ledger-total").textContent+" incl. examples)");
+  c.real.forEach(function(r){ L.push("  "+(r.have?"[x] ":"[ ] ")+(r.part||"?")+" · "+(r.vendor||"?")+" · "+r.cond+(r.cond==="used"?" · donor VIN "+(r.vin||"MISSING"):"")+(r.cost?" · $"+r.cost:"")); });
+  L.push("");
+  L.push("ITEMS TO FIX");
+  var any=false;
+  walkItems().forEach(function(i){ if(S.checks[i.id]==="fail"){ any=true; L.push("  ✗ "+i.group+": "+i.t); } });
+  if(!any) L.push("  none");
+  Object.keys(S.notes).forEach(function(k){ if(S.notes[k]){ var g=WALK.filter(function(x){return x.id===k;})[0]; L.push(""); L.push("NOTES · "+(g?g.group:k)); L.push("  "+S.notes[k].replace(/\n/g,"\n  ")); } });
+  return L.join("\n");
+}
+
+/* ---------- Tabs ---------- */
+function showTab(t){
+  S.tab=t; save();
+  document.querySelectorAll(".tab").forEach(function(b){ var on=b.dataset.tab===t; b.setAttribute("aria-selected",on); b.tabIndex=on?0:-1; });
+  ["docs","photos","receipts","walk","day"].forEach(function(k){ $("p-"+k).hidden = k!==t; });
+}
+document.querySelector(".tabs").addEventListener("click",function(e){ var b=e.target.closest(".tab"); if(b) showTab(b.dataset.tab); });
+document.querySelector(".tabs").addEventListener("keydown",function(e){
+  if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft") return;
+  var tabs=[].slice.call(document.querySelectorAll(".tab")), i=tabs.findIndex(function(b){return b.getAttribute("aria-selected")==="true";});
+  i=(i+(e.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length; showTab(tabs[i].dataset.tab); tabs[i].focus();
+});
+
+/* ---------- Events ---------- */
+document.addEventListener("click",function(e){
+  var b=e.target.closest(".seg button"); if(!b) return;
+  if(b.dataset.k){ // walkaround
+    var k=b.dataset.k, v=b.dataset.v; S.checks[k] = S.checks[k]===v ? undefined : v;
+    b.parentNode.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", S.checks[k]===x.dataset.v); });
+  } else if(b.dataset.store){ // doc/photo with N/A
+    var st=b.dataset.store, id=b.dataset.id, nv=b.dataset.v==="yes"?true:"na";
+    S[st][id] = S[st][id]===nv ? undefined : nv;
+    b.parentNode.querySelectorAll("button").forEach(function(x){ var xv=x.dataset.v==="yes"?true:"na"; x.setAttribute("aria-pressed", S[st][id]===xv); });
+  }
+  save(); renderSummary();
+});
+document.addEventListener("change",function(e){
+  var t=e.target;
+  if(t.dataset.store && t.type==="checkbox"){ S[t.dataset.store][t.dataset.id]=t.checked; save(); renderSummary(); }
+});
+document.addEventListener("input",function(e){
+  var t=e.target;
+  if(t.dataset.note){ S.notes[t.dataset.note]=t.value; save(); $("summary").textContent=buildText(compute()); }
+});
+
+// Vehicle fields
+$("vin").value=S.vin; $("loc").value=S.loc; $("appt").value=S.appt; $("miles").value=S.miles;
+$("vin").addEventListener("input",function(){ var p=this.selectionStart; this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,""); try{this.setSelectionRange(p,p);}catch(e){} S.vin=this.value; save(); renderVin(); renderSummary(); });
+$("loc").addEventListener("change",function(){ S.loc=this.value; save(); renderSummary(); });
+$("appt").addEventListener("change",function(){ S.appt=this.value; save(); renderSummary(); });
+$("miles").addEventListener("input",function(){ S.miles=this.value; save(); renderSummary(); });
+
+// Ledger
+var lb=$("ledger-body");
+lb.addEventListener("input",function(e){
+  var tr=e.target.closest("tr"); if(!tr||tr.dataset.i==null) return;
+  var r=S.receipts[+tr.dataset.i], f=e.target.dataset.f; if(!f) return;
+  if(f==="have") return;
+  r[f]= f==="vin" ? e.target.value.toUpperCase() : e.target.value;
+  if(f==="vin"){ e.target.value=r.vin; }
+  if(r.ex){ r.ex=false; tr.classList.remove("example"); var pill=tr.querySelector(".pill.ex"); if(pill) pill.remove(); }
+  var flag = r.cond==="used" && !/^[A-HJ-NPR-Z0-9]{17}$/i.test((r.vin||"").trim());
+  tr.classList.toggle("flag",flag);
+  save(); updateLedgerTotal(); renderSummary();
+});
+lb.addEventListener("change",function(e){
+  var tr=e.target.closest("tr"); if(!tr||tr.dataset.i==null) return;
+  var r=S.receipts[+tr.dataset.i], f=e.target.dataset.f;
+  if(f==="have"){ r.have=e.target.checked; if(r.ex) r.ex=false; save(); renderLedger(); renderSummary(); }
+  else if(f==="cond"){ r.cond=e.target.value; save(); renderLedger(); renderSummary(); }
+});
+lb.addEventListener("click",function(e){
+  var b=e.target.closest("[data-rm]"); if(!b) return;
+  S.receipts.splice(+b.dataset.rm,1); save(); renderLedger(); renderSummary();
+});
+$("add-row").addEventListener("click",function(){
+  S.receipts.push({part:"",vendor:"",date:"",cond:"new",vin:"",cost:"",have:false});
+  save(); renderLedger(); renderSummary();
+  var i=S.receipts.length-1, el=$("r"+i+"-part"); if(el) el.focus();
+});
+$("clear-examples").addEventListener("click",function(){
+  S.receipts=S.receipts.filter(function(r){ return !r.ex; }); save(); renderLedger(); renderSummary();
+});
+
+// Copy / reset
+$("copy").addEventListener("click",function(){
+  var txt=$("summary").textContent, done=function(){ var t=$("copied"); t.hidden=false; setTimeout(function(){ t.hidden=true; },1800); };
+  try{
+    navigator.clipboard.writeText(txt).then(done,function(){ selectSummary(); });
+  }catch(e){ selectSummary(); }
+});
+function selectSummary(){ var r=document.createRange(); r.selectNodeContents($("summary")); var s=getSelection(); s.removeAllRanges(); s.addRange(r); }
+var armed=null;
+$("reset").addEventListener("click",function(){
+  var b=this;
+  if(!armed){ b.classList.add("armed"); b.textContent="Click again to erase everything"; armed=setTimeout(function(){ armed=null; b.classList.remove("armed"); b.textContent="Reset all"; },3000); return; }
+  clearTimeout(armed); armed=null; b.classList.remove("armed"); b.textContent="Reset all";
+  S=blank(); save();
+  $("vin").value=""; $("loc").value="marietta"; $("appt").value=""; $("miles").value="";
+  renderAll(); showTab("day");
+});
+
+function renderAll(){ renderDocs(); renderPhotos(); renderWalk(); renderLedger(); renderVin(); renderSummary(); }
+renderAll();
+showTab(S.tab||"docs");
+})();
+</script>
+
+</body>
+</html>
