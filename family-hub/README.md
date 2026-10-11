@@ -34,8 +34,8 @@ starts and ends).
 | **UniFi (all devices on home Wi-Fi/LAN)** | ✅ Wind-down, pause, schedules, bonus time, per kid. |
 | **Text alerts (Brevo SMS)** | ✅ Wind-down warnings to kids, "+5 min" link, confirmations to parents. |
 | **Xbox** | ✅ Through UniFi: an Xbox without internet can't play online or launch online-only games. Microsoft has no public API for Family Settings, so in-console limits stay in the Xbox Family app. |
-| **Apple devices (MDM)** | 🔜 Phase 2: self-hosted NanoMDM on the Mac mini, for device lock, app blocking, restriction profiles on a schedule, and blocking cellular data. |
-| **Apple Screen Time** | ❌ No remote API. Apple only allows Screen Time changes from an app on the device itself. Keep using Family Sharing for app-level limits; MDM (phase 2) covers most of the rest. |
+| **iPhones & iPads (MDM)** | ✅ Supervised devices: at cutoff only the apps you allow can open, **on cellular too**. Always-on rules (no VPNs, no erasing, no profile installs). **Lock completely** (Lost Mode). Needs a one-time wipe, supervise and restore per device. |
+| **Apple Screen Time** | ❌ No remote API. Apple only allows Screen Time changes from an app on the device itself. Device management covers what Family Hub needs. |
 
 ---
 
@@ -139,15 +139,136 @@ Turn off **Also warn before scheduled downtime** to only text for wind-downs you
 ### 6. Close the easy loopholes
 
 - **Private Wi-Fi Address.** iPhones/iPads/Macs can use a random MAC per network, and it can change.
-  The dashboard flags these as **private MAC**. On each kid's device, open
-  **Settings → Wi-Fi → (i) next to your network** and turn **Private Wi-Fi Address** off, then re-pick the
-  device in the dashboard. Phase 2 (MDM) can enforce this.
-- **Cellular data.** Blocking Wi-Fi doesn't stop LTE/5G. For now, turn on Screen Time's
-  **Content & Privacy → Cellular Data Changes: Don't Allow**. Phase 2 (MDM) can block cellular data on a schedule.
+  The dashboard flags these as **private MAC**. Supervised devices get it forced off for your home
+  network (step 7, `home_wifi`). Until then: **Settings → Wi-Fi → (i) next to your network → Private
+  Wi-Fi Address** off, then re-pick the device in the dashboard.
+- **Cellular data.** Blocking Wi-Fi doesn't stop LTE/5G. Supervised devices (step 7) are covered:
+  at cutoff only the allowed apps open, wherever the phone is.
 - **Xbox alternate MAC.** Xbox lets you set an "Alternate MAC address" in network settings. Lock the
   console's settings behind your Microsoft Family passkey.
 - **Wired devices.** Your house has both, so the default is **Traffic rules**, which also cut cabled
   devices. If `probe` says traffic rules aren't available, switch to **Block devices** (Wi-Fi only).
+
+### 7. Apple devices: full control (wipe, supervise, restore)
+
+What you get for each supervised iPhone/iPad:
+
+| | |
+|---|---|
+| **At cutoff** (wind-down end, pause, bedtime) | A "Downtime" profile lets only the apps you pick open (Phone, Messages, Maps, Clock, Find My, Contacts by default; editable in **Settings → Apple devices**). Works on cellular and other people's Wi-Fi. Removed automatically when time's back on. |
+| **Always** | No VPNs, no erasing the device, no installing other profiles, no cellular-plan or eSIM changes, automatic date & time. Optionally: joins home Wi-Fi with its real MAC, so the router always recognizes it. |
+| **Lock completely** | Button on the kid's card. Puts their Apple devices in Lost Mode: a locked screen with your message and phone number, unusable until you tap **Unlock devices**. |
+| **Kid can't remove it** | Management can only be removed by you, from the Mac mini. |
+
+Devices are matched to kids by Wi-Fi MAC: once a phone is managed it appears in the kid's device picker
+as **Apple · managed**, and one tick covers both the network block and the phone.
+
+**How it fits together.** The Mac mini runs NanoMDM (the management server) and a SCEP server (issues each
+device its identity certificate). Apple's push service wakes the phone wherever it is; the phone then
+connects to the Mac mini over HTTPS. That needs a public address, provided by a tunnel, so **still no
+ports are opened on your router**. The tunnel points at the agent's "front door", which only lets through
+the three addresses devices need (`/mdm`, `/scep` and a secret enrollment link). The management API and
+everything else stay private.
+
+**What you need:** Homebrew Go (`brew install go`), Apple Configurator (free, Mac App Store), a USB cable,
+a free [mdmcert.download](https://mdmcert.download/registration) account (it signs the push-certificate
+request, as Apple only does that for registered MDM vendors; register first, approval takes a day or so),
+and **one Apple Account you'll keep for years** (a parent's) for the push certificate.
+
+#### 7a. Pick a permanent public address (tunnel)
+
+The address is written into every enrolled device. Changing it later means re-supervising every
+device, so choose one you'll keep.
+
+- **Cloudflare Tunnel** (recommended if jansick.com's DNS is, or can move, to Cloudflare; free):
+  `https://mdm.jansick.com`
+  ```bash
+  brew install cloudflared
+  cloudflared tunnel login
+  cloudflared tunnel create familyhub
+  cloudflared tunnel route dns familyhub mdm.jansick.com
+  # ~/.cloudflared/config.yml:
+  #   tunnel: familyhub
+  #   credentials-file: /Users/YOU/.cloudflared/<id>.json
+  #   ingress:
+  #     - hostname: mdm.jansick.com
+  #       service: http://127.0.0.1:9100
+  #     - service: http_status:404
+  sudo cloudflared service install
+  ```
+- **Tailscale Funnel** (no DNS changes; free): install Tailscale on the Mac mini, then
+  `tailscale funnel --bg 9100`. Your address is `https://<mac-name>.<tailnet>.ts.net`. Don't rename the
+  Mac or the tailnet afterwards.
+
+#### 7b. Install the servers
+
+```bash
+cd family-hub/agent
+./install-mdm-macos.sh https://mdm.jansick.com     # your address from 7a
+```
+
+This builds NanoMDM v0.9.0, SCEP v2.3.0 and `mdmctl` with Go, creates the certificate authority (10 years),
+generates all secrets into `agent.json`, starts both servers at boot, and restarts the agent.
+Check: `curl -s -o /dev/null -w '%{http_code}\n' https://mdm.jansick.com/v1/pushcert` prints **404**
+(the API is not reachable from outside, which is correct).
+
+#### 7c. Apple push certificate (yearly)
+
+```bash
+cd ~/Library/Application\ Support/FamilyHub/mdm
+../bin/mdmctl mdmcert.download -new -email=YOU@jansick.com
+#   → mdmcert.download emails you a file: mdm_signed_request.<date>.plist.b64.p7
+../bin/mdmctl mdmcert.download -decrypt=$HOME/Downloads/mdm_signed_request.<date>.plist.b64.p7
+#   → creates mdmcert.download.push.req
+```
+
+1. Go to [identity.apple.com](https://identity.apple.com), sign in with **the Apple Account you'll keep**,
+   **Create a Certificate**, upload `mdmcert.download.push.req`, download the `.pem`.
+2. Load it and restart the agent:
+   ```bash
+   /usr/bin/python3 ../familyhub_agent.py mdm-pushcert ~/Downloads/MDM_*.pem mdmcert.download.push.key
+   sudo launchctl kickstart -k system/com.jansick.familyhub
+   ```
+3. **Put a reminder on the calendar for 11 months from now.** To renew: repeat the `mdmctl` steps, then on
+   identity.apple.com choose **Renew** on the existing certificate (same Apple Account), and run
+   `mdm-pushcert` again. Renewing keeps every device working. Creating a *new* certificate instead, or
+   letting it expire, means re-supervising every device. The dashboard warns 30 days ahead.
+
+#### 7d. Optional: force the real Wi-Fi address at home
+
+In `~/Library/Application Support/FamilyHub/agent.json`, fill in `mdm.home_wifi` (`ssid`, `password`,
+`encryption`: `WPA2` or `WPA3`) and restart the agent. Supervised devices then join your network with their
+hardware MAC, so the router block always recognizes them. The password stays on the Mac mini.
+
+#### 7e. Each device: back up, supervise, restore, enroll
+
+Do the least important device first. Allow about an hour each, mostly waiting.
+
+1. **Before you start:** know the kid's Apple Account password (or reset it via Family Sharing) and turn off
+   **Find My** on the device. If it uses an **eSIM**, check with AT&T that you can get it reinstalled
+   (erasing can remove it).
+2. **Back up.** Plug the device into the Mac mini: Finder → the device → **Back Up all of the data to this
+   Mac** with **Encrypt local backup** ticked (keeps passwords and Health data). An iCloud backup also works.
+3. **Get the enrollment profile:**
+   `/usr/bin/python3 ~/Library/Application\ Support/FamilyHub/familyhub_agent.py mdm-profile ~/Desktop/FamilyHub.mobileconfig`
+4. **Supervise.** Apple Configurator → select the device → **Prepare** → *Manual Configuration* →
+   **Supervise devices** ✓, *Allow devices to pair with other computers* ✗ → MDM server: **Do not enroll in
+   MDM** (enrollment comes after the restore) → create an organization (e.g. "Jansick Family") when asked →
+   Setup Assistant: **Show only some steps** and keep **Apps & Data** (the restore step) shown → **Prepare**.
+   This erases the device.
+5. **Restore.** On the device, go through setup and choose **Restore from Mac** (Finder, still plugged in) or
+   **Restore from iCloud Backup**. The device stays supervised after the restore.
+6. **Enroll.** Back in Apple Configurator: select the device → **Add → Profiles** → `FamilyHub.mobileconfig`.
+   Supervised devices install it without asking the kid.
+7. **Check:** on the device, **Settings → General → VPN & Device Management** shows Family Hub with no
+   Remove option. On the dashboard, **Settings → Apple devices** lists it, not marked "not supervised", and
+   the agent installs the house rules within a minute.
+8. **Assign:** edit the kid on the dashboard and tick the device (shown under its Wi-Fi name, or as
+   **Apple · managed** if it's out).
+
+**Back up the Mac mini's Family Hub folder** (`~/Library/Application Support/FamilyHub`, which holds the
+certificate authority and enrollment database) and Apple Configurator's **organization (supervision
+identity)**: Configurator → Settings → Organizations → Export. Losing either means re-supervising devices.
 
 ---
 
@@ -202,14 +323,22 @@ A rule is never enabled with no devices in it, and switching methods undoes the 
 - The agent authenticates with a random token sent in a header. Only its SHA-256 hash is stored in WordPress.
   It can only fetch rules and report status; it can't log into WordPress.
 - Router credentials stay on the Mac mini (`agent.json`, mode 600) and are never sent to the website.
-- No inbound ports are opened at home.
+- No inbound ports are opened at home. The device-management tunnel reaches only the agent's front door,
+  which serves `/mdm` (device-signed requests checked by NanoMDM against your own certificate authority),
+  `/scep` (needs the enrollment challenge) and the enrollment profile at a secret link. The NanoMDM API,
+  the webhook (HMAC-signed) and the servers themselves listen on localhost only.
 - Device names from the network are treated as untrusted (escaped in the dashboard), since kids can rename their devices.
 - Use strong passwords and 2FA on the WordPress admin accounts: whoever controls them controls the kids' internet.
 
 ## Development
 
 ```bash
-python3 -m unittest discover -s family-hub/agent/tests   # agent: schedules + full loop against a fake UniFi OS gateway
+python3 -m unittest discover -s family-hub/agent/tests   # agent: schedules, full loop vs a fake UniFi OS gateway, MDM logic
+# Against the real NanoMDM/SCEP servers with a simulated iPhone (enroll, SCEP, signed check-ins, commands):
+GOBIN=/tmp/fh go install github.com/micromdm/nanomdm/cmd/nanomdm@v0.9.0
+GOBIN=/tmp/fh go install github.com/micromdm/scep/v2/cmd/scepserver@v2.3.0
+GOBIN=/tmp/fh go install github.com/micromdm/scep/v2/cmd/scepclient@v2.3.0
+FAMILYHUB_MDM_BIN=/tmp/fh python3 -m unittest discover -s family-hub/agent/tests
 php -l family-hub/wordpress/family-hub/includes/*.php
 wp eval-file family-hub/wordpress/tests/notify-test.php    # wind-down texts, on a throwaway dev site only
 ```
@@ -219,9 +348,6 @@ The plugin needs WordPress 6.0+ and PHP 7.4+, and has no build step.
 
 ## Roadmap
 
-- **Phase 2: Apple MDM.** NanoMDM on the Mac mini plus an APNs certificate (free for personal use via
-  mdmcert.download). Supervise the kids' devices with Apple Configurator (this wipes them), then
-  enforce the Wi-Fi profile with a fixed MAC, block cellular data during downtime, lock or hide apps,
-  and add a "Lock device now" button.
-- **Phase 3:** time allowances (e.g. 2 h of Xbox per day, measured from network activity); possibly a
+- **Next:** kids' Macs (same management server; macOS supports most of the same controls).
+- **Later:** time allowances (e.g. 2 h of Xbox per day, measured from network activity); possibly a
   companion iOS app for true Screen Time control.

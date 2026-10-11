@@ -8,6 +8,14 @@
   var loadError = '';
   var fastUntil = 0;
   var pollTimer = null;
+  var APPS = [
+    ['com.apple.mobilephone', 'Phone'], ['com.apple.MobileSMS', 'Messages'], ['com.apple.facetime', 'FaceTime'],
+    ['com.apple.Maps', 'Maps'], ['com.apple.mobiletimer', 'Clock'], ['com.apple.findmy', 'Find My'],
+    ['com.apple.MobileAddressBook', 'Contacts'], ['com.apple.camera', 'Camera'], ['com.apple.mobileslideshow', 'Photos'],
+    ['com.apple.Music', 'Music'], ['com.apple.iBooks', 'Books'], ['com.apple.mobilenotes', 'Notes'],
+    ['com.apple.calculator', 'Calculator'], ['com.apple.weather', 'Weather'], ['com.apple.mobilecal', 'Calendar'],
+    ['com.apple.reminders', 'Reminders'], ['com.apple.Health', 'Health']
+  ];
   var DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var DAY_LETTER = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -33,7 +41,9 @@
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
     warn: '<path d="M12 4l9 16H3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".8" fill="currentColor"/>',
-    trash: '<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>'
+    trash: '<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>',
+    phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+    apple: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10 9.5l1.5 1.5 3-3"/>'
   };
   function icon(name, cls) {
     return '<svg class="ic ' + (cls || '') + '" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + ICONS[name] + '</svg>';
@@ -99,7 +109,7 @@
 
   function deviceName(d, client) {
     client = client || (d && d.client);
-    return (d && d.label) || (client && (client.name || client.hostname || client.oui)) || (d && d.mac) || 'Device';
+    return (d && d.label) || (client && (client.name || client.hostname || client.oui)) || (d && d.mdm && (d.mdm.name || d.mdm.model)) || (d && d.mac) || 'Device';
   }
 
   function profileById(id) {
@@ -212,6 +222,16 @@
     }
   }
 
+  function mdmTags(m) {
+    if (!m) return '';
+    var out = '<span class="tag managed" title="Managed Apple device · iOS ' + h(m.os) + (m.battery != null ? ' · battery ' + h(m.battery) + '%' : '') + '">' + icon('apple') + 'managed</span>';
+    if (m.supervised === false) out += '<span class="tag warn" title="Not supervised: Downtime and Lost Mode need supervision">not supervised</span>';
+    if (m.locked) out += '<span class="tag blocked">' + icon('lock') + 'locked</span>';
+    else if (m.downtime) out += '<span class="tag blocked" title="Only allowed apps open">apps off</span>';
+    if (m.error) out += '<span class="tag warn" title="' + h(m.error) + '">error</span>';
+    return out;
+  }
+
   function agentChip() {
     var a = state.agent;
     if (!a.configured) return '<button class="chip warn" data-act="settings">' + icon('warn') + 'Set up home agent</button>';
@@ -242,6 +262,14 @@
     var v = (state.agent.version || '').split('.').map(Number);
     if (state.agent.version && (v[0] || 0) === 0 && (v[1] || 0) < 2) {
       html += '<div class="banner bad">' + icon('warn') + '<span>The home agent on the Mac mini is out of date (v' + h(state.agent.version) + '). Re-run <code>install-macos.sh</code> before using Wind down: the old agent cuts internet off immediately instead of after the countdown.</span></div>';
+    }
+    if (state.mdm && state.agent.online) {
+      if (state.mdm.error) html += '<div class="banner bad">' + icon('warn') + '<span>Apple devices: ' + h(state.mdm.error) + '</span></div>';
+      var exp = state.mdm.push_cert_expires ? Date.parse(state.mdm.push_cert_expires) / 1000 : 0;
+      if (exp && exp - state.now < 30 * 86400) {
+        html += '<div class="banner bad">' + icon('warn') + '<span>The Apple push certificate ' + (exp < state.now ? 'has expired' : 'expires ' + new Date(exp * 1000).toLocaleDateString()) +
+          '. Renew it at identity.apple.com with the same Apple Account, or phones stop responding (see README).</span></div>';
+      }
     }
     if (state.agent.gateway && state.agent.gateway.error && state.agent.online) {
       html += '<div class="banner bad">' + icon('warn') + '<span>Router: ' + h(state.agent.gateway.error) + '</span></div>';
@@ -321,11 +349,19 @@
           '<span class="dname">' + h(deviceName(d)) + '</span>' +
           (c && c.randomized ? '<span class="tag warn" title="This device uses a private Wi-Fi address that can change. Turn off Private Wi-Fi Address for your network on the device.">private MAC</span>' : '') +
           (d.applied ? '<span class="tag blocked">' + icon('lock') + 'blocked</span>' : '') +
+          mdmTags(d.mdm) +
           '</li>';
       });
       html += '</ul>';
     } else {
       html += '<p class="hint">No devices yet. <button class="link" data-act="edit" data-id="' + h(p.id) + '">Add devices</button></p>';
+    }
+
+    var managed = p.devices.filter(function (d) { return d.mdm; });
+    if (managed.length) {
+      html += '<div class="lockrow">' + (p.lock
+        ? '<span class="tag blocked">' + icon('lock') + 'Locked (Lost Mode)</span><button class="btn ghost small" data-act="unlock" data-id="' + h(p.id) + '">Unlock devices</button>'
+        : '<span class="hint">' + managed.length + ' Apple device' + (managed.length === 1 ? '' : 's') + ' managed</span><button class="btn ghost small danger-text" data-act="lock" data-id="' + h(p.id) + '">' + icon('lock') + 'Lock completely</button>') + '</div>';
     }
 
     if (p.schedule.length) {
@@ -415,6 +451,11 @@
 
     function devicePicker() {
       var clients = (state.clients || []).slice();
+      ((state.mdm && state.mdm.devices) || []).forEach(function (m) {
+        if (m.enrolled && m.wifi_mac && !clients.some(function (c) { return c.mac === m.wifi_mac; })) {
+          clients.push({ mac: m.wifi_mac, name: m.name || m.model, oui: 'Apple · managed', online: false });
+        }
+      });
       draft.devices.forEach(function (d) {
         if (!clients.some(function (c) { return c.mac === d.mac; })) clients.push({ mac: d.mac, name: d.label, manual: true });
       });
@@ -598,8 +639,29 @@
       '<div class="row"><button type="submit" class="btn primary">Save text settings</button></div>' +
       '<div class="row test-row"><input name="test_phone" type="tel" placeholder="Phone for a test text" value="' + h(parents[0].phone) + '"><button type="button" class="btn ghost" data-test-sms>Send test</button></div>' +
       '</form>';
+    var m = state.mdm;
+    var apps = s.downtime_apps || [];
+    var known = APPS.map(function (a) { return a[0]; });
+    var mdmSection = '<h4>Apple devices</h4><form class="mdm-form">' +
+      (m ? '<dl class="kv"><dt>Status</dt><dd>' + h(m.error ? m.error : 'Working') + '</dd>' +
+        '<dt>Push certificate</dt><dd>' + h(m.push_cert_expires ? 'expires ' + new Date(m.push_cert_expires).toLocaleDateString() : 'not uploaded') + '</dd>' +
+        '<dt>Enrolled</dt><dd>' + h((m.devices || []).filter(function (d) { return d.enrolled; }).length) + ' devices</dd></dl>' +
+        '<ul class="mdm-list">' + (m.devices || []).filter(function (d) { return d.enrolled; }).map(function (d) {
+          var owner = d.wifi_mac && state.assigned[d.wifi_mac] ? profileById(state.assigned[d.wifi_mac]) : null;
+          return '<li>' + icon('phone', 'muted') + '<span class="dname">' + h(d.name || d.model || d.serial) + ' <small>iOS ' + h(d.os) + '</small></span>' +
+            (d.supervised === false ? '<span class="tag warn">not supervised</span>' : '') +
+            (owner ? '<span class="tag">' + h(owner.name) + '</span>' : '<span class="tag warn" title="Pick it in a kid’s profile (shows as Apple · managed)">unassigned</span>') + '</li>';
+        }).join('') + '</ul>'
+        : '<p class="hint">Not set up yet. See “Apple devices” in the README: the Mac mini runs the management server, then each phone is supervised with Apple Configurator.</p>') +
+      '<div class="field"><span>Apps that still open during downtime</span><div class="appgrid">' + APPS.map(function (a) {
+        return '<label class="chk"><input type="checkbox" name="app" value="' + a[0] + '"' + (apps.indexOf(a[0]) !== -1 ? ' checked' : '') + '>' + h(a[1]) + '</label>';
+      }).join('') + '</div></div>' +
+      '<label class="field"><span>Other apps <small>(App Store bundle IDs, comma-separated)</small></span><input name="other_apps" value="' + h(apps.filter(function (a) { return known.indexOf(a) === -1; }).join(', ')) + '" placeholder="com.duolingo.DuolingoMobile"></label>' +
+      '<label class="field"><span>Lock-screen message for “Lock completely”</span><input name="lock_message" maxlength="160" value="' + h(s.lock_message) + '"></label>' +
+      '<p class="hint">The lock screen also shows ' + h((s.parents && s.parents[0] && s.parents[0].phone) || 'the first parent’s phone number') + ' so they can call you.</p>' +
+      '<div class="row"><button type="submit" class="btn primary">Save Apple device settings</button></div></form>';
     var inner = '<div class="sheet-head"><h3>Settings</h3><button class="icon-btn" data-close aria-label="Close">' + icon('x') + '</button></div><div class="sheet-body">' +
-      smsSection +
+      smsSection + mdmSection +
       '<h4>Home agent</h4><dl class="kv">' + rows.map(function (r) { return '<dt>' + h(r[0]) + '</dt><dd>' + h(r[1]) + '</dd>'; }).join('') + '</dl>' +
       '<div class="token-box"><p class="hint">The agent on the Mac mini signs in with a token. ' + (a.configured ? 'Generating a new one disconnects the agent until you update its config.' : '') + '</p>' +
       '<button class="btn ' + (a.configured ? 'ghost' : 'primary') + '" data-token>' + (a.configured ? 'Generate new token' : 'Generate agent token') + '</button><div class="token-out"></div></div>' +
@@ -630,6 +692,13 @@
         mutate('POST', 'settings', body, 'Text settings saved').then(function () {
           if (form.brevo_api_key) { form.brevo_api_key.value = ''; form.brevo_api_key.placeholder = 'Saved. Paste a new key to replace it'; }
         }, function () {});
+      });
+      var mform = dlg.querySelector('.mdm-form');
+      mform.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var list = [].slice.call(mform.querySelectorAll('input[name=app]:checked')).map(function (i) { return i.value; });
+        mform.other_apps.value.split(',').map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (x) { list.push(x); });
+        mutate('POST', 'settings', { downtime_apps: list, lock_message: mform.lock_message.value.trim() }, 'Apple device settings saved');
       });
       dlg.querySelector('[data-test-sms]').addEventListener('click', function () {
         api('POST', 'sms/test', { phone: form.test_phone.value }).then(function () {
@@ -735,6 +804,13 @@
         choiceSheet('Pause everyone', pauseChoices(), function (body) {
           mutate('POST', 'override-all', body, 'Everyone paused');
         });
+        break;
+      case 'lock':
+        if (!window.confirm('Lock ' + p.name + '’s Apple devices completely?\n\nThey show your message and phone number and can’t be used at all until you tap Unlock. (Apple calls this Lost Mode.)')) break;
+        mutate('POST', 'profiles/' + id + '/lock', { locked: true }, p.name + '’s devices are locking');
+        break;
+      case 'unlock':
+        mutate('POST', 'profiles/' + id + '/lock', { locked: false }, p.name + '’s devices are unlocking');
         break;
       case 'resume-all':
         mutate('POST', 'override-all', { mode: 'clear' }, 'Everyone is back on schedule');

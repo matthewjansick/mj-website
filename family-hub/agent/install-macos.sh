@@ -29,7 +29,7 @@ if ! "$PYTHON" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)'
 fi
 
 mkdir -p "$APP_DIR" "$LOG_DIR"
-cp "$SRC_DIR/familyhub_agent.py" "$APP_DIR/familyhub_agent.py"
+cp "$SRC_DIR/familyhub_agent.py" "$SRC_DIR/familyhub_mdm.py" "$APP_DIR/"
 if [[ ! -f "$APP_DIR/agent.json" ]]; then
   cp "$SRC_DIR/agent.example.json" "$APP_DIR/agent.json"
   CREATED_CONFIG=1

@@ -33,12 +33,14 @@ from datetime import datetime, timedelta, timezone
 from http.cookies import SimpleCookie
 from typing import Any, Dict, List, Optional, Tuple
 
+import familyhub_mdm as mdm
+
 try:
     from zoneinfo import ZoneInfo
 except ImportError:  # pragma: no cover - Python < 3.9
     ZoneInfo = None  # type: ignore
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 LOG = logging.getLogger("familyhub")
 MAC_RE = re.compile(r"^([0-9a-f]{2}:){5}[0-9a-f]{2}$")
 CLIENT_REPORT_INTERVAL = 60  # seconds between full client-list uploads
@@ -554,6 +556,24 @@ class Enforcer:
         return events, applied
 
 
+def mdm_targets(config: dict, now_ts: float) -> Dict[str, Tuple[bool, bool, str]]:
+    """Wi-Fi MAC -> (blocked, locked, profile_id) for every device assigned to a kid."""
+    tz = resolve_tz(config.get("timezone"))
+    out: Dict[str, Tuple[bool, bool, str]] = {}
+    for profile in config.get("profiles", []):
+        if not profile.get("enabled", True):
+            continue
+        blocked, _ = profile_state(profile, now_ts, tz)
+        locked = bool(profile.get("lock"))
+        for mac in profile.get("devices", []):
+            mac = norm_mac(mac)
+            if not mac:
+                continue
+            prev = out.get(mac, (False, False, ""))
+            out[mac] = (prev[0] or blocked, prev[1] or locked, prev[2] or profile.get("id", ""))
+    return out
+
+
 def event(kind: str, profile_id: str, mac: str = "", message: str = "") -> dict:
     return {"type": kind, "profile_id": profile_id, "mac": mac, "message": message, "ts": int(time.time())}
 
@@ -636,6 +656,15 @@ class Agent:
         self.gateway_error = ""
         self.last_client_report = 0.0
         self.poll_interval = float(cfg.get("poll_interval", 10))
+        self.mdm: Optional[mdm.MDMManager] = None
+        if cfg.get("mdm", {}).get("api_key"):
+            mdm_path = os.path.join(data_dir, "mdm-state.json")
+            mdm_state = load_json(mdm_path, {})
+            self.mdm = mdm.MDMManager(cfg["mdm"], mdm_state, lambda: save_json(mdm_path, mdm_state))
+
+    def start(self) -> None:
+        if self.mdm:
+            self.mdm.start_servers()
 
     def cycle(self) -> None:
         now = time.time()
@@ -656,14 +685,20 @@ class Agent:
         if not self._sync(report_clients):
             LOG.warning("Using cached rules")
 
+        events: List[dict] = []
         if self.config is not None and clients is not None:
-            events, self.applied = self.enforcer.apply(self.config, clients, now)
-            for e in events:
-                LOG.info("%s %s %s %s", e["type"], e["profile_id"], e["mac"], e["message"])
-            self.pending_events = (self.pending_events + events)[-500:]
-            if events:  # report changes now so the dashboard updates promptly
-                self._sync(None)
-        elif self.config is None:
+            more, self.applied = self.enforcer.apply(self.config, clients, now)
+            events.extend(more)
+        if self.config is not None and self.mdm:
+            # Phones are managed even when the router is unreachable.
+            self.mdm.reconcile(mdm_targets(self.config, now), self.config.get("mdm") or {}, now)
+            events.extend(self.mdm.drain_events())
+        for e in events:
+            LOG.info("%s %s %s %s", e["type"], e["profile_id"], e["mac"], e["message"])
+        self.pending_events = (self.pending_events + events)[-500:]
+        if events:  # report changes now so the dashboard updates promptly
+            self._sync(None)
+        if self.config is None:
             LOG.warning("No rules yet: waiting for first successful check-in with the hub")
 
     def _sync(self, clients: Optional[List[dict]]) -> bool:
@@ -677,6 +712,8 @@ class Agent:
         }
         if clients is not None:
             payload["clients"] = clients
+        if self.mdm:
+            payload["mdm"] = self.mdm.report()
         try:
             response = self.hub.sync(payload)
         except HubError as exc:
@@ -693,6 +730,7 @@ class Agent:
 
     def run_forever(self) -> None:
         LOG.info("Family Hub agent %s starting", VERSION)
+        self.start()
         while True:
             started = time.time()
             try:
@@ -767,10 +805,62 @@ def list_clients(cfg: dict) -> int:
     return 0
 
 
+def mdm_command(args, cfg: dict) -> int:
+    m = cfg.get("mdm") or {}
+    if not m.get("api_key"):
+        print("Device management isn't set up: run install-mdm-macos.sh first.", file=sys.stderr)
+        return 2
+    api = mdm.NanoMDM(m.get("nanomdm_url", "http://127.0.0.1:9000"), m["api_key"])
+    if args.command == "mdm-pushcert":
+        if len(args.args) != 2:
+            print("usage: mdm-pushcert PUSH_CERT.pem PUSH_KEY.key [--key-password ...]", file=sys.stderr)
+            return 2
+        cert = open(args.args[0], "rb").read()
+        key = mdm.unencrypted_key(open(args.args[1], "rb").read(), args.key_password)
+        topic = api.upload_push_cert(cert.strip() + b"\n" + key)
+        m["topic"] = topic
+        m["push_cert_expires"] = mdm.cert_expiry(cert)
+        cfg["mdm"] = m
+        save_json(args.config, cfg)
+        print(f"Push certificate stored. Topic: {topic}")
+        print(f"Expires: {m['push_cert_expires'] or '?'}  (renew at identity.apple.com with the SAME Apple Account,")
+        print("then run mdm-pushcert again and restart the agent)")
+        return 0
+    if args.command == "mdm-profile":
+        if not m.get("topic"):
+            print("Upload the push certificate first (mdm-pushcert).", file=sys.stderr)
+            return 2
+        data = mdm.enrollment_profile(m["public_url"], m["topic"], m["scep_challenge"])
+        out = args.args[0] if args.args else "FamilyHub-enroll.mobileconfig"
+        with open(out, "wb") as fh:
+            fh.write(data)
+        print(f"Wrote {out}")
+        print(f"Apple Configurator server URL: {m['public_url'].rstrip('/')}/enroll/{m['enroll_token']}")
+        return 0
+    if args.command == "mdm-devices":
+        state = load_json(os.path.join(os.path.expanduser(cfg.get(
+            "data_dir", "~/Library/Application Support/FamilyHub")), "mdm-state.json"), {})
+        devices = (state.get("mdm") or {}).get("devices", {})
+        if not devices:
+            print("No devices enrolled yet.")
+        for d in devices.values():
+            flags = ("supervised " if d.get("supervised") else "NOT-supervised ") + \
+                    ("" if d.get("enrolled") else "UNENROLLED ") + \
+                    ("downtime " if d.get("have", {}).get("downtime") else "") + \
+                    ("LOCKED " if d.get("have", {}).get("lost") else "")
+            print(f"{d.get('name') or '?':<24} {d.get('product', ''):<14} iOS {d.get('os', '?'):<8} "
+                  f"{d.get('wifi_mac') or 'no-mac-yet':<18} {flags}")
+        return 0
+    return 2
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Family Hub home agent")
     parser.add_argument("command", nargs="?", default="run",
-                        choices=["run", "once", "probe", "clients"])
+                        choices=["run", "once", "probe", "clients",
+                                 "mdm-pushcert", "mdm-profile", "mdm-devices"])
+    parser.add_argument("args", nargs="*", help="mdm-pushcert: CERT.pem KEY.pem | mdm-profile: [OUT]")
+    parser.add_argument("--key-password", default="", help="mdm-pushcert: password for an encrypted push key")
     parser.add_argument("-c", "--config", default=os.path.expanduser(
         "~/Library/Application Support/FamilyHub/agent.json"))
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -786,13 +876,15 @@ def main(argv: Optional[List[str]] = None) -> int:
             return probe(cfg)
         if args.command == "clients":
             return list_clients(cfg)
+        if args.command.startswith("mdm-"):
+            return mdm_command(args, cfg)
         agent = Agent(cfg)
         if args.command == "once":
             agent.cycle()
             agent.cycle()  # second pass reports the results of the first
             return 0
         agent.run_forever()
-    except GatewayError as exc:
+    except (GatewayError, mdm.MDMError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:

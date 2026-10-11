@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Family Hub
  * Description:       Self-hosted parental controls: pause internet, downtime schedules and bonus time for each kid's devices, enforced on your UniFi network by a small home agent. Dashboard lives at /family.
- * Version:           0.2.0
+ * Version:           0.3.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Matthew Jansick
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'FAMILY_HUB_VERSION', '0.2.0' );
+define( 'FAMILY_HUB_VERSION', '0.3.0' );
 define( 'FAMILY_HUB_DB_VERSION', 2 );
 define( 'FAMILY_HUB_FILE', __FILE__ );
 define( 'FAMILY_HUB_DIR', plugin_dir_path( __FILE__ ) );

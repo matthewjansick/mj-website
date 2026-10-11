@@ -41,6 +41,7 @@ final class Family_Hub_REST {
 			)
 		);
 		register_rest_route( self::NS, "/profiles/{$id}/override", array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'override' ), 'permission_callback' => $parent ) );
+		register_rest_route( self::NS, "/profiles/{$id}/lock", array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'lock' ), 'permission_callback' => $parent ) );
 		register_rest_route( self::NS, '/override-all', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'override_all' ), 'permission_callback' => $parent ) );
 		register_rest_route( self::NS, '/settings', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'save_settings' ), 'permission_callback' => $parent ) );
 		register_rest_route( self::NS, '/sms/test', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'test_sms' ), 'permission_callback' => $parent ) );
@@ -110,6 +111,9 @@ final class Family_Hub_REST {
 			if ( isset( $body['clients'] ) && is_array( $body['clients'] ) ) {
 				Family_Hub_Store::save_clients( self::clean_clients( $body['clients'] ) );
 			}
+			if ( isset( $body['mdm'] ) && is_array( $body['mdm'] ) ) {
+				Family_Hub_Store::save_mdm( self::clean_mdm( $body['mdm'] ) );
+			}
 
 			if ( isset( $body['events'] ) && is_array( $body['events'] ) ) {
 				foreach ( array_slice( $body['events'], 0, 100 ) as $e ) {
@@ -173,6 +177,46 @@ final class Family_Hub_REST {
 		return array( 'updated' => time(), 'items' => $out );
 	}
 
+	private static function clean_mdm( array $m ) {
+		$text = static function ( $a, $k, $len = 80 ) {
+			return isset( $a[ $k ] ) && is_scalar( $a[ $k ] ) ? substr( sanitize_text_field( (string) $a[ $k ] ), 0, $len ) : '';
+		};
+		$devices = array();
+		foreach ( isset( $m['devices'] ) && is_array( $m['devices'] ) ? array_slice( $m['devices'], 0, 100 ) : array() as $d ) {
+			if ( ! is_array( $d ) || ! preg_match( '/^[A-Za-z0-9-]{8,64}$/', $text( $d, 'udid' ) ) ) {
+				continue;
+			}
+			$mac       = Family_Hub_Store::normalize_mac( $text( $d, 'wifi_mac' ) );
+			$devices[] = array(
+				'udid'       => $text( $d, 'udid' ),
+				'name'       => $text( $d, 'name' ),
+				'product'    => $text( $d, 'product' ),
+				'model'      => $text( $d, 'model' ),
+				'os'         => $text( $d, 'os', 20 ),
+				'serial'     => $text( $d, 'serial', 30 ),
+				'wifi_mac'   => $mac ? $mac : '',
+				'supervised' => isset( $d['supervised'] ) ? (bool) $d['supervised'] : null,
+				'enrolled'   => ! empty( $d['enrolled'] ),
+				'last_seen'  => isset( $d['last_seen'] ) ? absint( $d['last_seen'] ) : 0,
+				'battery'    => isset( $d['battery'] ) && is_numeric( $d['battery'] ) ? (int) $d['battery'] : null,
+				'downtime'   => ! empty( $d['downtime'] ),
+				'locked'     => ! empty( $d['locked'] ),
+				'baseline'   => ! empty( $d['baseline'] ),
+				'pending'    => isset( $d['pending'] ) && is_array( $d['pending'] ) ? array_values( array_intersect( $d['pending'], array( 'baseline', 'downtime', 'lost' ) ) ) : array(),
+				'error'      => $text( $d, 'error', 200 ),
+			);
+		}
+		return array(
+			'updated'           => time(),
+			'ok'                => ! empty( $m['ok'] ),
+			'error'             => $text( $m, 'error', 300 ),
+			'topic'             => $text( $m, 'topic', 120 ),
+			'push_cert_expires' => $text( $m, 'push_cert_expires', 40 ),
+			'public_url'        => esc_url_raw( $text( $m, 'public_url', 200 ) ),
+			'devices'           => $devices,
+		);
+	}
+
 	/** What the agent needs to enforce, and nothing else. */
 	private static function agent_config() {
 		$settings = Family_Hub_Store::settings();
@@ -185,12 +229,19 @@ final class Family_Hub_REST {
 				'devices'  => array_values( wp_list_pluck( $p['devices'], 'mac' ) ),
 				'schedule' => $p['schedule'],
 				'override' => isset( $p['override'] ) ? $p['override'] : null,
+				'lock'     => ! empty( $p['lock'] ),
 			);
 		}
+		$parents = array_values( array_filter( wp_list_pluck( $settings['parents'], 'phone' ) ) );
 		return array(
 			'timezone'    => wp_timezone_string(),
 			'enforcement' => $settings['enforcement'],
 			'profiles'    => $profiles,
+			'mdm'         => array(
+				'downtime_apps' => array_values( $settings['downtime_apps'] ),
+				'lock_message'  => $settings['lock_message'],
+				'lock_phone'    => $parents ? $parents[0] : '',
+			),
 		);
 	}
 
@@ -205,6 +256,13 @@ final class Family_Hub_REST {
 		$applied  = isset( $agent['applied'] ) ? $agent['applied'] : array();
 		$assigned = array();
 		$notify   = Family_Hub_Notify::state();
+		$mdm      = Family_Hub_Store::mdm();
+		$mdm_by_mac = array();
+		foreach ( isset( $mdm['devices'] ) ? $mdm['devices'] : array() as $md ) {
+			if ( $md['wifi_mac'] && $md['enrolled'] ) {
+				$mdm_by_mac[ $md['wifi_mac'] ] = $md;
+			}
+		}
 
 		$profiles = array();
 		foreach ( Family_Hub_Store::profiles() as $p ) {
@@ -217,7 +275,13 @@ final class Family_Hub_REST {
 				$client           = isset( $items[ $mac ] ) ? $items[ $mac ] : null;
 				$want             = 'disabled' === $status['reason'] ? null : $status['blocked'];
 				$is_applied       = array_key_exists( $mac, $applied ) ? $applied[ $mac ] : null;
-				if ( null !== $want && $is_applied !== $want ) {
+				// A phone on cellular never reaches the router; it only needs the MDM side.
+				$on_network = $client || ! isset( $mdm_by_mac[ $mac ] );
+				if ( null !== $want && $on_network && $is_applied !== $want ) {
+					$pending = true;
+				}
+				$managed = isset( $mdm_by_mac[ $mac ] ) ? $mdm_by_mac[ $mac ] : null;
+				if ( $managed && null !== $want && ( $managed['downtime'] !== $want || $managed['locked'] !== ! empty( $p['lock'] ) ) ) {
 					$pending = true;
 				}
 				$devices[] = array(
@@ -225,6 +289,7 @@ final class Family_Hub_REST {
 					'label'   => $d['label'],
 					'client'  => $client,
 					'applied' => $is_applied,
+					'mdm'     => $managed,
 				);
 			}
 			$p['devices'] = $devices;
@@ -253,6 +318,7 @@ final class Family_Hub_REST {
 					'gateway'    => isset( $agent['gateway'] ) ? $agent['gateway'] : array(),
 				),
 				'settings' => $settings,
+				'mdm'      => $mdm ? $mdm : null,
 				'sms'      => array(
 					'key_set'      => '' !== Family_Hub_Notify::api_key(),
 					'key_constant' => defined( 'FAMILY_HUB_BREVO_API_KEY' ),
@@ -331,6 +397,7 @@ final class Family_Hub_REST {
 			'devices'  => array_values( $devices ),
 			'schedule' => $schedule,
 			'override' => $existing && isset( $existing['override'] ) ? $existing['override'] : null,
+			'lock'     => $existing && ! empty( $existing['lock'] ),
 		);
 		Family_Hub_Store::put_profile( $profile );
 		Family_Hub_Store::log_event(
@@ -442,6 +509,22 @@ final class Family_Hub_REST {
 		return self::state();
 	}
 
+	/** Lock completely (Lost Mode on every managed Apple device) or release. */
+	public static function lock( WP_REST_Request $request ) {
+		$profile = Family_Hub_Store::profile( $request->get_param( 'id' ) );
+		if ( ! $profile ) {
+			return new WP_Error( 'not_found', 'No such profile.', array( 'status' => 404 ) );
+		}
+		$profile['lock'] = (bool) $request->get_param( 'locked' );
+		Family_Hub_Store::put_profile( $profile );
+		Family_Hub_Store::log_event(
+			'lock',
+			$profile['name'] . ': ' . ( $profile['lock'] ? 'devices locked (Lost Mode)' : 'devices unlocked' ),
+			array( 'actor' => self::actor(), 'profile_id' => $profile['id'] )
+		);
+		return self::state();
+	}
+
 	public static function override_all( WP_REST_Request $request ) {
 		$in       = $request->get_json_params();
 		$in       = is_array( $in ) ? $in : array();
@@ -513,6 +596,19 @@ final class Family_Hub_REST {
 				}
 			}
 			$settings['templates'] = $templates;
+		}
+		if ( isset( $in['downtime_apps'] ) && is_array( $in['downtime_apps'] ) ) {
+			$apps = array();
+			foreach ( array_slice( $in['downtime_apps'], 0, 60 ) as $app ) {
+				$app = trim( (string) $app );
+				if ( preg_match( '/^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/', $app ) ) {
+					$apps[] = $app;
+				}
+			}
+			$settings['downtime_apps'] = array_values( array_unique( $apps ) );
+		}
+		if ( isset( $in['lock_message'] ) ) {
+			$settings['lock_message'] = substr( sanitize_text_field( (string) $in['lock_message'] ), 0, 160 );
 		}
 		if ( isset( $in['brevo_api_key'] ) && ! defined( 'FAMILY_HUB_BREVO_API_KEY' ) ) {
 			// Write-only: never sent back to the browser.

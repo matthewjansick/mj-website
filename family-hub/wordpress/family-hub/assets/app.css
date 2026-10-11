@@ -92,7 +92,7 @@ code { font: 13px ui-monospace, "SF Mono", Menlo, monospace; background: var(--s
 .link { border: 0; background: none; padding: 0; color: var(--primary); cursor: pointer; font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
 a { color: var(--primary); }
 
-.banner { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; margin-bottom: 16px; font-size: 14px; }
+.banner { overflow-wrap: anywhere; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; margin-bottom: 16px; font-size: 14px; }
 .banner.bad { background: var(--bad-soft); color: var(--bad); }
 
 .setup { background: var(--surface); border: 1px dashed var(--rule); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 18px; }
@@ -242,3 +242,13 @@ textarea { resize: vertical; font: inherit; }
 .sms-form .row { margin-top: 8px; }
 .field small { font-weight: 400; color: var(--ink-3); }
 @media (max-width: 560px) { .actions .btn.big { font-size: 15px; } }
+
+.tag.managed { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
+.lockrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--rule); padding-top: 12px; }
+.lockrow .hint { margin: 0; }
+.appgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 4px 10px; }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 4px 0; cursor: pointer; }
+.chk input { width: 17px; height: 17px; accent-color: var(--primary); }
+.mdm-list { list-style: none; padding: 0; margin: 0 0 10px; }
+.mdm-list li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.mdm-list small { color: var(--ink-3); }

@@ -123,6 +123,9 @@ final class Family_Hub_Store {
 				'winddown_default' => 15,
 				'winddown_bedtime' => true,
 				'templates'        => array(),
+				// Apple devices (MDM): apps that still open during downtime.
+				'downtime_apps'    => array( 'com.apple.mobilephone', 'com.apple.MobileSMS', 'com.apple.Maps', 'com.apple.mobiletimer', 'com.apple.findmy', 'com.apple.MobileAddressBook' ),
+				'lock_message'     => 'This device is locked by Mom & Dad.',
 			)
 		);
 	}
@@ -149,6 +152,15 @@ final class Family_Hub_Store {
 
 	public static function save_clients( array $clients ) {
 		update_option( self::OPT_CLIENTS, $clients, false );
+	}
+
+	public static function mdm() {
+		$m = get_option( 'family_hub_mdm', array() );
+		return is_array( $m ) ? $m : array();
+	}
+
+	public static function save_mdm( array $mdm ) {
+		update_option( 'family_hub_mdm', $mdm, false );
 	}
 
 	public static function token_configured() {
