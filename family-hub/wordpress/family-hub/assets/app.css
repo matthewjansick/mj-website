@@ -223,11 +223,17 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .toast.error { background: var(--danger-bg); color: #fff; }
 
 @media (max-width: 560px) {
+  /* iOS zooms into fields smaller than 16px when tapped, which shifts sheets off screen. */
+  input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px; }
+  .sheet-foot { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .choices { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  .sheet-body:last-child { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
   .top-actions { width: 100%; }
   .top-actions .chip { flex: 1; justify-content: center; }
   .everyone { flex-direction: column; align-items: stretch; }
   .everyone .row > .btn { flex: 1; }
-  dialog.sheet { margin: auto auto 0; border-radius: 20px 20px 0 0; width: 100vw; max-width: 100vw; max-height: 92dvh; }
+  dialog.sheet { margin: auto auto 0; border-radius: 20px 20px 0 0; width: 100vw; max-width: 100vw;
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top) + 8px)); }
   .times { flex-wrap: wrap; }
 }
 
