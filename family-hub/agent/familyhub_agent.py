@@ -38,7 +38,7 @@ try:
 except ImportError:  # pragma: no cover - Python < 3.9
     ZoneInfo = None  # type: ignore
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 LOG = logging.getLogger("familyhub")
 MAC_RE = re.compile(r"^([0-9a-f]{2}:){5}[0-9a-f]{2}$")
 CLIENT_REPORT_INTERVAL = 60  # seconds between full client-list uploads
@@ -120,8 +120,10 @@ def profile_state(profile: dict, now_ts: float, tz) -> Tuple[bool, str]:
     if not profile.get("enabled", True):
         return False, "disabled"
     override = profile.get("override") or {}
-    mode, until = override.get("mode"), override.get("until")
-    if mode in ("block", "allow") and (until is None or until > now_ts):
+    mode, until, start = override.get("mode"), override.get("until"), override.get("start")
+    # A wind-down is a block override with a future start: allowed until then.
+    if mode in ("block", "allow") and (start is None or start <= now_ts) \
+            and (until is None or until > now_ts):
         return mode == "block", "override"
     local = datetime.fromtimestamp(now_ts, tz)
     if in_downtime(profile.get("schedule"), local):

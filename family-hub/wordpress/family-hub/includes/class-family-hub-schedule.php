@@ -52,8 +52,7 @@ final class Family_Hub_Schedule {
 			return array( 'blocked' => false, 'reason' => 'disabled', 'until' => null );
 		}
 		$o = isset( $profile['override'] ) && is_array( $profile['override'] ) ? $profile['override'] : array();
-		if ( isset( $o['mode'] ) && in_array( $o['mode'], array( 'block', 'allow' ), true )
-			&& ( ! isset( $o['until'] ) || null === $o['until'] || $o['until'] > $now ) ) {
+		if ( self::override_active( $o, $now ) ) {
 			return array(
 				'blocked' => 'block' === $o['mode'],
 				'reason'  => 'block' === $o['mode'] ? 'paused' : 'bonus',
@@ -69,28 +68,39 @@ final class Family_Hub_Schedule {
 		);
 	}
 
-	/** Next time (within 8 days) the schedule flips state, checked at rule boundaries. */
-	public static function next_change( array $rules, $now, $blocked_now ) {
-		if ( ! $rules ) {
-			return null;
-		}
-		$tz         = wp_timezone();
-		$today      = ( new DateTimeImmutable( '@' . $now ) )->setTimezone( $tz )->setTime( 0, 0 );
-		$candidates = array();
-		for ( $d = -1; $d <= 8; $d++ ) {
+	/** A wind-down is a block override whose start is still in the future. */
+	public static function override_active( $o, $now ) {
+		return is_array( $o ) && isset( $o['mode'] ) && in_array( $o['mode'], array( 'block', 'allow' ), true )
+			&& ( empty( $o['start'] ) || (int) $o['start'] <= $now )
+			&& ( empty( $o['until'] ) || (int) $o['until'] > $now );
+	}
+
+	/** Every rule start/end time from $from (exclusive) over the next $days days. */
+	public static function boundaries( array $rules, $from, $days = 2 ) {
+		$out   = array();
+		$today = ( new DateTimeImmutable( '@' . $from ) )->setTimezone( wp_timezone() )->setTime( 0, 0 );
+		for ( $d = -1; $d <= $days; $d++ ) {
 			$date = $today->modify( ( $d >= 0 ? '+' : '' ) . $d . ' days' );
 			foreach ( $rules as $rule ) {
 				foreach ( array( $rule['start'], $rule['end'] ) as $hm ) {
 					list( $h, $m ) = array_map( 'intval', explode( ':', $hm ) );
 					$ts            = $date->setTime( $h, $m )->getTimestamp();
-					if ( $ts > $now ) {
-						$candidates[ $ts ] = true;
+					if ( $ts > $from ) {
+						$out[ $ts ] = true;
 					}
 				}
 			}
 		}
-		ksort( $candidates );
-		foreach ( array_keys( $candidates ) as $ts ) {
+		ksort( $out );
+		return array_keys( $out );
+	}
+
+	/** Next time (within 8 days) the schedule flips state, checked at rule boundaries. */
+	public static function next_change( array $rules, $now, $blocked_now ) {
+		if ( ! $rules ) {
+			return null;
+		}
+		foreach ( self::boundaries( $rules, $now, 8 ) as $ts ) {
 			if ( self::in_downtime( $rules, self::local( $ts ) ) !== $blocked_now ) {
 				return $ts;
 			}

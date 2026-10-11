@@ -1,8 +1,13 @@
 # Family Hub
 
-A self-hosted parental controls hub at **jansick.com/family**: pause the internet,
-set downtime schedules and give bonus time for each kid, for every device on the
-home network (phones, iPads, laptops, the Xbox), from one dashboard.
+A self-hosted parental controls hub at **jansick.com/family**: wind down, pause, schedule
+and give bonus time for each kid, for every device on the home network (phones, iPads,
+laptops, the Xbox), from one dashboard.
+
+**Wind down** is the main button: tap it, pick 15 minutes, and each kid gets a text
+(through Brevo) at 15, 5 and 1 minute before their internet goes off. Each kid can add
+5 minutes once from a link in the text. When the router confirms the cutoff, both
+parents get a text.
 
 ```
 jansick.com/family  ── WordPress plugin (WP Engine)
@@ -26,7 +31,8 @@ starts and ends).
 
 | Ecosystem | Status |
 |---|---|
-| **UniFi (all devices on home Wi-Fi/LAN)** | ✅ Phase 1 (this code). Pause, schedules, bonus time, per kid. |
+| **UniFi (all devices on home Wi-Fi/LAN)** | ✅ Wind-down, pause, schedules, bonus time, per kid. |
+| **Text alerts (Brevo SMS)** | ✅ Wind-down warnings to kids, "+5 min" link, confirmations to parents. |
 | **Xbox** | ✅ Through UniFi: an Xbox without internet can't play online or launch online-only games. Microsoft has no public API for Family Settings, so in-console limits stay in the Xbox Family app. |
 | **Apple devices (MDM)** | 🔜 Phase 2: self-hosted NanoMDM on the Mac mini, for device lock, app blocking, restriction profiles on a schedule, and blocking cellular data. |
 | **Apple Screen Time** | ❌ No remote API. Apple only allows Screen Time changes from an app on the device itself. Keep using Family Sharing for app-level limits; MDM (phase 2) covers most of the rest. |
@@ -42,9 +48,9 @@ starts and ends).
    (Or SFTP/git-push the `family-hub` folder into `wp-content/plugins/`.)
 3. Visit **https://jansick.com/family**. You'll be asked to log in. Only administrators get in.
    - If `/family` shows a 404, open **Settings → Permalinks** and click **Save** once.
-   - WP Engine skips its page cache for logged-in users, so the dashboard is never cached.
-     If the dashboard or agent ever seem stale, ask WP Engine support to exclude
-     `/family/` and `/wp-json/family-hub/` from caching.
+   - **Ask WP Engine support to exclude `/family/` (including `/family/more/`) and
+     `/wp-json/family-hub/` from page caching.** The dashboard is only seen logged in
+     (never cached), but the kids' "+5 min" page is opened without logging in.
 4. In the dashboard, open **⚙ Settings → Generate agent token** and copy the snippet it shows.
    It's shown once. Generate a new one if you lose it.
 
@@ -110,7 +116,27 @@ In the dashboard, click **Add a kid**, then tick their devices (the list comes f
 and shows names, makers, MACs and IPs) and add downtime rules. There are one-click presets
 for school nights (Sun–Thu 9 PM–7 AM) and weekend nights.
 
-### 5. Close the easy loopholes
+### 5. Turn on text alerts (Brevo)
+
+In **⚙ Settings → Text alerts**:
+
+1. Tick **Send texts through Brevo** and paste your **Brevo API key** (Brevo → SMTP & API → API keys).
+   The key is never shown again or sent back to the browser. You can instead put
+   `define( 'FAMILY_HUB_BREVO_API_KEY', 'xkeysib-…' );` in `wp-config.php` (WP Engine → your site →
+   SFTP), which keeps it out of the database.
+2. **Sender** is optional. Leave it blank to use your registered Brevo US number. US carriers
+   ignore name-style senders.
+3. Add both parents' phone numbers. Add each kid's phone in their profile (✎).
+4. Click **Send test**, then **Save text settings**.
+
+Defaults: messages start with "Mom & Dad", warnings at 15/5/1 minutes, 15-minute wind-downs,
+and warnings before scheduled downtime too. Wording is editable under **Message wording**.
+
+**Cost:** a wind-down sends up to 4 texts per kid (3 warnings and "screens off") plus one per
+parent. With nightly scheduled downtime that's roughly 120–150 texts a month per kid.
+Turn off **Also warn before scheduled downtime** to only text for wind-downs you start.
+
+### 6. Close the easy loopholes
 
 - **Private Wi-Fi Address.** iPhones/iPads/Macs can use a random MAC per network, and it can change.
   The dashboard flags these as **private MAC**. On each kid's device, open
@@ -120,12 +146,31 @@ for school nights (Sun–Thu 9 PM–7 AM) and weekend nights.
   **Content & Privacy → Cellular Data Changes: Don't Allow**. Phase 2 (MDM) can block cellular data on a schedule.
 - **Xbox alternate MAC.** Xbox lets you set an "Alternate MAC address" in network settings. Lock the
   console's settings behind your Microsoft Family passkey.
-- **Wired devices.** "Block devices" mode only stops Wi-Fi. If the Xbox is plugged in by cable, switch
-  **Settings → How to block** to **Traffic rules**.
+- **Wired devices.** Your house has both, so the default is **Traffic rules**, which also cut cabled
+  devices. If `probe` says traffic rules aren't available, switch to **Block devices** (Wi-Fi only).
 
 ---
 
 ## How it behaves
+
+### Wind-down
+
+| | |
+|---|---|
+| **Start one** | **Wind down** on a kid, or **Wind down everyone**, then pick the time (default first). Two taps. |
+| **Kid's texts** | *"Mom & Dad: Screens off at 8:30 PM (15 min). Start wrapping up. Need 5 more min? jansick.com/family/more/…"*, then 5 min, then *"1 minute left. Save your game!"*, then *"Screens are off now."* |
+| **+5 min** | The link opens a page with an **Add 5 minutes** button. It works once per wind-down, only before the cutoff, and both parents are texted when it's used. Opening the link alone does nothing; message apps preview links, so it needs the button tap. |
+| **Parents** | One text to each parent when the router confirms everyone's offline (*"Family Hub: Ava and Liam offline now."*), or a warning if the agent hasn't confirmed within 3 minutes. |
+| **Change your mind** | **+5 min** or **Cancel** on the card. The kid gets *"Change of plans…"* or *"Never mind…"*. |
+| **Bedtime / bonus ending** | Scheduled downtime and the end of bonus time get the same warnings automatically. |
+| **After cutoff** | Internet stays off until you tap **Resume** (or the schedule takes over). |
+
+The cutoff itself is enforced by the Mac mini at the exact minute, even if the website is down.
+The texts come from the website, timed by the agent's check-ins every 10 seconds (WP Engine's own
+timer only runs when someone visits the site). If the Mac mini is offline, the website's timer is the
+fallback, so texts may arrive late.
+
+### Everything else
 
 - **States.** A kid is *Internet on*, *Downtime* (schedule), *Paused* (you), *Bonus time* (you), or
   *Not managed*. Pauses and bonus time override the schedule and expire on their own.
@@ -141,7 +186,7 @@ for school nights (Sun–Thu 9 PM–7 AM) and weekend nights.
 
 ### Enforcement methods
 
-| | Block devices (default) | Traffic rules |
+| | Block devices | Traffic rules (default) |
 |---|---|---|
 | How | UniFi "Block client" | A UniFi traffic rule per kid: block Internet |
 | Wi-Fi devices | ✅ Kicked off and can't rejoin | ✅ Stay connected, no internet |
@@ -166,6 +211,7 @@ A rule is never enabled with no devices in it, and switching methods undoes the 
 ```bash
 python3 -m unittest discover -s family-hub/agent/tests   # agent: schedules + full loop against a fake UniFi OS gateway
 php -l family-hub/wordpress/family-hub/includes/*.php
+wp eval-file family-hub/wordpress/tests/notify-test.php    # wind-down texts, on a throwaway dev site only
 ```
 
 The agent uses only the Python standard library and runs on the Python 3.9 that ships with macOS.
@@ -177,6 +223,5 @@ The plugin needs WordPress 6.0+ and PHP 7.4+, and has no build step.
   mdmcert.download). Supervise the kids' devices with Apple Configurator (this wipes them), then
   enforce the Wi-Fi profile with a fixed MAC, block cellular data during downtime, lock or hide apps,
   and add a "Lock device now" button.
-- **Phase 3:** Xbox "now playing" (read-only, via OpenXBL); time allowances (e.g. 2 h of Xbox per day,
-  measured from network activity); push notifications to parents; possibly a companion iOS app for true
-  Screen Time control.
+- **Phase 3:** time allowances (e.g. 2 h of Xbox per day, measured from network activity); possibly a
+  companion iOS app for true Screen Time control.

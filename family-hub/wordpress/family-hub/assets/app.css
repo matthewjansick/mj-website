@@ -13,6 +13,9 @@
   --bad: #c42b2b;
   --bad-soft: #fbe6e5;
   --danger-bg: #c42b2b;
+  --wind-bg: #b86200;
+  --wind: #a35600;
+  --wind-soft: #fdeedc;
   --bonus: #8a5a00;
   --bonus-soft: #fcf0d4;
   --warn: #9a6400;
@@ -28,7 +31,7 @@
     --bg: #0c1218; --surface: #151d25; --surface-2: #1c2630; --ink: #e8edf2; --ink-2: #a7b3bf;
     --ink-3: #74828f; --rule: #263240; --primary: #4a90f0; --good: #45c27d; --good-soft: #12301f;
     --bad: #f06a62; --bad-soft: #3a1b1b; --bonus: #f0b54a; --bonus-soft: #3a2c0f; --warn: #f0b54a;
-    --warn-soft: #3a2c0f; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+    --warn-soft: #3a2c0f; --wind: #f5a54a; --wind-soft: #3a2610; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
     color-scheme: dark;
   }
 }
@@ -36,7 +39,7 @@
   --bg: #0c1218; --surface: #151d25; --surface-2: #1c2630; --ink: #e8edf2; --ink-2: #a7b3bf;
   --ink-3: #74828f; --rule: #263240; --primary: #4a90f0; --good: #45c27d; --good-soft: #12301f;
   --bad: #f06a62; --bad-soft: #3a1b1b; --bonus: #f0b54a; --bonus-soft: #3a2c0f; --warn: #f0b54a;
-  --warn-soft: #3a2c0f; color-scheme: dark;
+  --warn-soft: #3a2c0f; --wind: #f5a54a; --wind-soft: #3a2610; color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -80,6 +83,8 @@ code { font: 13px ui-monospace, "SF Mono", Menlo, monospace; background: var(--s
 .btn.primary:hover { filter: brightness(1.07); }
 .btn.danger { background: var(--danger-bg); border-color: var(--danger-bg); color: #fff; }
 .btn.danger:hover { filter: brightness(1.07); }
+.btn.warnbtn { background: var(--wind-bg); border-color: var(--wind-bg); color: #fff; }
+.btn.warnbtn:hover { filter: brightness(1.07); }
 .btn.ghost { background: transparent; }
 .btn.big { flex: 1; min-height: 46px; font-size: 16px; }
 .btn.small { min-height: 32px; padding: 5px 10px; font-size: 13px; font-weight: 500; }
@@ -122,6 +127,7 @@ a { color: var(--primary); }
 .tone-open .status { background: var(--good-soft); color: var(--good); }
 .tone-blocked .status { background: var(--bad-soft); color: var(--bad); }
 .tone-bonus .status { background: var(--bonus-soft); color: var(--bonus); }
+.tone-winding .status { background: var(--wind-soft); color: var(--wind); }
 .tone-off .status { background: var(--surface-2); color: var(--ink-3); }
 .pending { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--surface); color: var(--ink-2); white-space: nowrap; animation: pulse 1.4s ease-in-out infinite; }
 .pending.stale { animation: none; color: var(--bad); }
@@ -166,7 +172,7 @@ dialog.sheet { overflow-y: auto; overscroll-behavior: contain; }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
 .field > span { font-size: 13px; font-weight: 600; color: var(--ink-2); }
-input:not([type=checkbox]):not([type=radio]), select { border: 1px solid var(--rule); background: var(--bg); border-radius: 10px; padding: 9px 11px; min-height: 40px; width: 100%; }
+input:not([type=checkbox]):not([type=radio]), select, textarea { border: 1px solid var(--rule); background: var(--bg); border-radius: 10px; padding: 9px 11px; min-height: 40px; width: 100%; }
 input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
 .swatch { width: 30px; height: 30px; border-radius: 50%; background: var(--kid); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--rule); cursor: pointer; }
@@ -209,7 +215,8 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .events li { display: grid; grid-template-columns: 90px 1fr; gap: 2px 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
 .events time { color: var(--ink-3); font-size: 12px; padding-top: 2px; }
 .events small { grid-column: 2; color: var(--ink-3); font-size: 12px; }
-.events .ev-error span { color: var(--bad); }
+.events .ev-error span, .events .ev-sms_failed span { color: var(--bad); }
+.events .ev-sms_sent span { color: var(--ink-2); }
 
 .toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translate(-50%, 30px); opacity: 0; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 500; transition: .2s; pointer-events: none; max-width: calc(100vw - 32px); z-index: 10; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
@@ -223,3 +230,15 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   dialog.sheet { margin: auto auto 0; border-radius: 20px 20px 0 0; width: 100vw; max-width: 100vw; max-height: 92dvh; }
   .times { flex-wrap: wrap; }
 }
+
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+.two .field { margin: 6px 0; }
+textarea { resize: vertical; font: inherit; }
+.templates { margin: 10px 0; }
+.templates summary { cursor: pointer; color: var(--ink-2); font-size: 14px; }
+.test-row { margin-top: 10px; flex-wrap: nowrap; align-items: center; }
+.test-row .btn { white-space: nowrap; }
+.test-row input { min-width: 0; }
+.sms-form .row { margin-top: 8px; }
+.field small { font-weight: 400; color: var(--ink-3); }
+@media (max-width: 560px) { .actions .btn.big { font-size: 15px; } }

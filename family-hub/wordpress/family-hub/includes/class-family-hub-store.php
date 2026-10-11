@@ -112,8 +112,17 @@ final class Family_Hub_Store {
 		return wp_parse_args(
 			is_array( $s ) ? $s : array(),
 			array(
-				'enforcement'   => 'client_block',
-				'poll_interval' => 10,
+				// Traffic rules cut internet for wired devices too (mixed wired/Wi-Fi house).
+				'enforcement'      => 'traffic_rule',
+				'poll_interval'    => 10,
+				'sms_enabled'      => false,
+				'sms_sender'       => '',
+				'sms_prefix'       => 'Mom & Dad',
+				'parents'          => array(),
+				'warn_minutes'     => array( 15, 5, 1 ),
+				'winddown_default' => 15,
+				'winddown_bedtime' => true,
+				'templates'        => array(),
 			)
 		);
 	}

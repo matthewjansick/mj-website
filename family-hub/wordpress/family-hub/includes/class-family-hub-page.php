@@ -11,6 +11,7 @@ final class Family_Hub_Page {
 
 	public static function init() {
 		add_rewrite_rule( '^' . preg_quote( FAMILY_HUB_SLUG, '/' ) . '/?$', 'index.php?family_hub=1', 'top' );
+		add_rewrite_rule( '^' . preg_quote( FAMILY_HUB_SLUG, '/' ) . '/more/([a-z0-9]+)/?$', 'index.php?family_hub_more=$matches[1]', 'top' );
 		add_filter( 'query_vars', array( __CLASS__, 'query_vars' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'render' ), 0 );
 		add_action( 'admin_menu', array( __CLASS__, 'admin_menu' ) );
@@ -28,6 +29,7 @@ final class Family_Hub_Page {
 	}
 
 	public static function deactivate() {
+		wp_clear_scheduled_hook( Family_Hub_Notify::CRON_HOOK );
 		flush_rewrite_rules( false );
 	}
 
@@ -37,6 +39,7 @@ final class Family_Hub_Page {
 
 	public static function query_vars( $vars ) {
 		$vars[] = 'family_hub';
+		$vars[] = 'family_hub_more';
 		return $vars;
 	}
 
@@ -61,7 +64,34 @@ final class Family_Hub_Page {
 		return $links;
 	}
 
+	/**
+	 * The kid's "+5 more minutes" page, linked from the warning text. No login:
+	 * the random link is the credential, it works once, and only while the
+	 * countdown is running. GET only shows a button (message apps prefetch
+	 * links); the POST does the work.
+	 */
+	public static function render_more( $token ) {
+		nocache_headers();
+		header( 'X-Robots-Tag: noindex, nofollow', true );
+		header( 'Referrer-Policy: no-referrer', true );
+		$result = Family_Hub_Notify::find_token( $token );
+		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && 'ok' === $result['status'] ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+			$result = Family_Hub_Notify::use_token( $token );
+			if ( is_wp_error( $result ) ) {
+				$result = array( 'status' => 'busy' );
+			}
+		}
+		$time = isset( $result['target'] ) ? wp_date( get_option( 'time_format', 'g:i a' ), $result['target'] ) : '';
+		$name = isset( $result['profile'] ) ? $result['profile']['name'] : '';
+		require FAMILY_HUB_DIR . 'templates/more.php';
+		exit;
+	}
+
 	public static function render() {
+		$more = get_query_var( 'family_hub_more' );
+		if ( $more ) {
+			self::render_more( $more );
+		}
 		if ( ! get_query_var( 'family_hub' ) ) {
 			return;
 		}

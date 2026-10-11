@@ -62,6 +62,14 @@ class ScheduleTests(unittest.TestCase):
         p["enabled"] = False
         self.assertEqual(fa.profile_state(p, now, UTC), (False, "disabled"))
 
+    def test_winddown_starts_later(self):
+        now = at(2026, 10, 11, 15, 0).timestamp()
+        p = {"enabled": True, "schedule": [], "override": {"mode": "block", "start": now + 900, "until": None}}
+        self.assertEqual(fa.profile_state(p, now, UTC), (False, "schedule"))
+        self.assertEqual(fa.profile_state(p, now + 899, UTC), (False, "schedule"))
+        self.assertEqual(fa.profile_state(p, now + 900, UTC), (True, "override"))
+        self.assertEqual(fa.profile_state(p, now + 86400, UTC), (True, "override"))
+
     def test_shared_device_blocked_if_any_profile_blocked(self):
         cfg = {"timezone": "UTC", "profiles": [
             {"id": "a", "enabled": True, "devices": ["AA-BB-CC-00-00-01"], "override": {"mode": "block", "until": None}},

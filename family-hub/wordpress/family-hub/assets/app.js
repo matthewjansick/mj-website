@@ -188,8 +188,21 @@
 
   // ------------------------------------------------------------------ render
 
+  function winding(p) {
+    return !p.status.blocked && p.cutoff && (p.cutoff.at - state.now) <= state.window + 5 ? p.cutoff : null;
+  }
+
+  function minutesLeft(ts) {
+    return Math.max(1, Math.round((ts - state.now) / 60));
+  }
+
   function statusInfo(p) {
     var s = p.status;
+    var w = winding(p);
+    if (w) {
+      var why = w.source === 'bedtime' ? 'Bedtime' : w.source === 'bonus' ? 'Bonus time ending' : 'Winding down';
+      return { tone: 'winding', title: why + ' · ' + minutesLeft(w.at) + ' min', sub: 'Screens off at ' + fmtTime(w.at) + (p.extended ? ' · used their +5' : ''), icon: 'clock' };
+    }
     switch (s.reason) {
       case 'paused': return { tone: 'blocked', title: 'Paused', sub: s.until ? fmtUntil(s.until) : 'until you resume', icon: 'pause' };
       case 'downtime': return { tone: 'blocked', title: 'Downtime', sub: s.until ? fmtUntil(s.until) : 'scheduled', icon: 'moon' };
@@ -226,6 +239,10 @@
       '</header>';
 
     if (loadError) html += '<div class="banner bad">' + icon('warn') + '<span>' + h(loadError) + '</span></div>';
+    var v = (state.agent.version || '').split('.').map(Number);
+    if (state.agent.version && (v[0] || 0) === 0 && (v[1] || 0) < 2) {
+      html += '<div class="banner bad">' + icon('warn') + '<span>The home agent on the Mac mini is out of date (v' + h(state.agent.version) + '). Re-run <code>install-macos.sh</code> before using Wind down: the old agent cuts internet off immediately instead of after the countdown.</span></div>';
+    }
     if (state.agent.gateway && state.agent.gateway.error && state.agent.online) {
       html += '<div class="banner bad">' + icon('warn') + '<span>Router: ' + h(state.agent.gateway.error) + '</span></div>';
     }
@@ -238,7 +255,8 @@
 
     if (profiles.length) {
       html += '<div class="everyone"><span>Everyone</span><div class="row">' +
-        '<button class="btn danger" data-act="pause-all">' + icon('pause') + 'Pause all</button>' +
+        '<button class="btn warnbtn" data-act="winddown-all">' + icon('clock') + 'Wind down everyone</button>' +
+        '<button class="btn ghost" data-act="pause-all">' + icon('pause') + 'Pause all now</button>' +
         (profiles.some(function (p) { return p.override; })
           ? '<button class="btn ghost" data-act="resume-all">' + icon('play') + 'Back to schedules</button>' : '') +
         '</div></div>';
@@ -271,8 +289,15 @@
 
     html += '<div class="actions">';
     var r = p.status.reason;
-    if (r === 'open') {
-      html += '<button class="btn danger big" data-act="pause" data-id="' + h(p.id) + '">' + icon('pause') + 'Pause internet</button>';
+    var w = winding(p);
+    if (w) {
+      html += '<button class="btn ghost big" data-act="postpone" data-id="' + h(p.id) + '">+5 min</button>';
+      if (w.source === 'winddown') html += '<button class="btn ghost big" data-act="clear" data-id="' + h(p.id) + '">Cancel</button>';
+      else if (w.source === 'bedtime') html += '<button class="btn ghost big" data-act="bonus" data-id="' + h(p.id) + '">Bonus time</button>';
+      else html += '<button class="btn ghost big" data-act="clear" data-id="' + h(p.id) + '">End now</button>';
+    } else if (r === 'open') {
+      html += '<button class="btn warnbtn big" data-act="winddown" data-id="' + h(p.id) + '">' + icon('clock') + 'Wind down</button>';
+      html += '<button class="btn ghost" data-act="pause" data-id="' + h(p.id) + '" aria-label="Pause now">' + icon('pause') + 'Pause</button>';
     } else if (r === 'paused') {
       html += '<button class="btn primary big" data-act="clear" data-id="' + h(p.id) + '">' + icon('play') + 'Resume</button>';
       html += '<button class="btn ghost" data-act="pause" data-id="' + h(p.id) + '">Change</button>';
@@ -351,6 +376,18 @@
     ];
   }
 
+  function winddownChoices() {
+    var d = +state.settings.winddown_default || 15;
+    var marks = (state.settings.warn_minutes || []).join(', ');
+    var smsOn = state.settings.sms_enabled && state.sms.key_set;
+    var opts = [{ label: 'In ' + d + ' minutes', sub: smsOn ? 'Texts at ' + marks + ' min before' : 'Text alerts are off (Settings)', body: { mode: 'winddown', delay: d } }];
+    [5, 15, 30, 60].forEach(function (m) {
+      if (m !== d) opts.push({ label: 'In ' + m + ' minutes', body: { mode: 'winddown', delay: m } });
+    });
+    opts.push({ label: 'Right now', sub: 'No warning', body: { mode: 'winddown', delay: 0 } });
+    return opts;
+  }
+
   function bonusChoices() {
     return [
       { label: '15 minutes', body: { mode: 'allow', minutes: 15 } },
@@ -368,6 +405,7 @@
       name: p ? p.name : '',
       color: p ? p.color : BOOT.colors[(state.profiles.length) % BOOT.colors.length],
       enabled: p ? p.enabled : true,
+      phone: p ? (p.phone || '') : '',
       devices: p ? p.devices.map(function (d) { return { mac: d.mac, label: d.label }; }) : [],
       schedule: p ? JSON.parse(JSON.stringify(p.schedule)) : []
     };
@@ -419,6 +457,7 @@
       '<div class="sheet-head"><h3>' + (p ? 'Edit ' + h(p.name) : 'Add a kid') + '</h3><button type="button" class="icon-btn" data-close aria-label="Close">' + icon('x') + '</button></div>' +
       '<div class="sheet-body">' +
       '<label class="field"><span>Name</span><input name="name" maxlength="40" required value="' + h(draft.name) + '" placeholder="e.g. Ava"></label>' +
+      '<label class="field"><span>Phone for text alerts <small>(optional)</small></span><input name="phone" type="tel" inputmode="tel" autocomplete="off" value="' + h(draft.phone) + '" placeholder="(555) 123-4567"></label>' +
       '<div class="field"><span>Color</span><div class="swatches">' + BOOT.colors.map(function (c) {
         return '<button type="button" class="swatch' + (c === draft.color ? ' on' : '') + '" data-color="' + c + '" style="--kid: var(--c-' + c + ')" aria-label="' + c + '"></button>';
       }).join('') + '</div></div>' +
@@ -505,6 +544,7 @@
           if (!draft.schedule[i].days.length) { toast('Pick at least one day for each downtime rule.', true); return; }
         }
         draft.name = form.name.value.trim();
+        draft.phone = form.phone.value.trim();
         mutate(p ? 'PUT' : 'POST', p ? 'profiles/' + p.id : 'profiles', draft, 'Saved').then(function () { dlg.close(); }, function () {});
       });
       if (!p) form.name.focus();
@@ -526,7 +566,40 @@
     ];
     if (g.error) rows.push(['Router error', g.error]);
     var s = state.settings;
+    var sms = state.sms;
+    var parents = (s.parents || []).slice();
+    while (parents.length < 2) parents.push({ name: '', phone: '' });
+    var TEMPLATE_LABELS = {
+      warn: 'Warning ({time}, {minutes}, {more})', final: '1-minute warning', more: '“5 more minutes” link ({link})',
+      cutoff: 'Screens off', extended: 'After they add 5 min ({time})', moved: 'Cutoff moved ({time})', cancelled: 'Wind-down cancelled',
+      parent_cutoff: 'To parents: offline ({names})', parent_extended: 'To parents: +5 used ({name}, {time})',
+      parent_unconfirmed: 'To parents: not confirmed ({names})'
+    };
+    var smsSection = '<h4>Text alerts</h4>' +
+      '<form class="sms-form">' +
+      '<label class="switch"><input type="checkbox" name="sms_enabled"' + (s.sms_enabled ? ' checked' : '') + '><span>Send texts through Brevo</span></label>' +
+      (sms.key_constant
+        ? '<p class="hint">Brevo API key is set in wp-config.php.</p>'
+        : '<label class="field"><span>Brevo API key</span><input name="brevo_api_key" type="password" autocomplete="off" placeholder="' + (sms.key_set ? 'Saved. Paste a new key to replace it' : 'xkeysib-…') + '"></label>') +
+      '<div class="two"><label class="field"><span>Sender <small>(optional)</small></span><input name="sms_sender" maxlength="15" value="' + h(s.sms_sender) + '" placeholder="Brevo default"></label>' +
+      '<label class="field"><span>Messages start with</span><input name="sms_prefix" maxlength="30" value="' + h(s.sms_prefix) + '"></label></div>' +
+      '<div class="field"><span>Parents (get “offline now” and “+5 used” texts)</span>' + parents.map(function (pp, i) {
+        return '<div class="two"><input name="pname' + i + '" placeholder="Name" value="' + h(pp.name) + '"><input name="pphone' + i + '" type="tel" placeholder="Phone" value="' + h(pp.phone) + '"></div>';
+      }).join('') + '</div>' +
+      '<div class="two"><label class="field"><span>Warn at (minutes before)</span><input name="warn_minutes" value="' + h((s.warn_minutes || []).join(', ')) + '"></label>' +
+      '<label class="field"><span>Default wind-down</span><select name="winddown_default">' + [5, 10, 15, 20, 30, 45, 60].map(function (n) {
+        return '<option value="' + n + '"' + (+s.winddown_default === n ? ' selected' : '') + '>' + n + ' minutes</option>';
+      }).join('') + '</select></label></div>' +
+      '<label class="switch"><input type="checkbox" name="winddown_bedtime"' + (s.winddown_bedtime ? ' checked' : '') + '><span>Also warn before scheduled downtime and when bonus time ends</span></label>' +
+      '<details class="templates"><summary>Message wording</summary>' + Object.keys(sms.defaults).map(function (k) {
+        var val = (s.templates && s.templates[k]) || sms.defaults[k];
+        return '<label class="field"><span>' + h(TEMPLATE_LABELS[k] || k) + '</span><textarea name="tpl_' + h(k) + '" rows="2">' + h(val) + '</textarea></label>';
+      }).join('') + '</details>' +
+      '<div class="row"><button type="submit" class="btn primary">Save text settings</button></div>' +
+      '<div class="row test-row"><input name="test_phone" type="tel" placeholder="Phone for a test text" value="' + h(parents[0].phone) + '"><button type="button" class="btn ghost" data-test-sms>Send test</button></div>' +
+      '</form>';
     var inner = '<div class="sheet-head"><h3>Settings</h3><button class="icon-btn" data-close aria-label="Close">' + icon('x') + '</button></div><div class="sheet-body">' +
+      smsSection +
       '<h4>Home agent</h4><dl class="kv">' + rows.map(function (r) { return '<dt>' + h(r[0]) + '</dt><dd>' + h(r[1]) + '</dd>'; }).join('') + '</dl>' +
       '<div class="token-box"><p class="hint">The agent on the Mac mini signs in with a token. ' + (a.configured ? 'Generating a new one disconnects the agent until you update its config.' : '') + '</p>' +
       '<button class="btn ' + (a.configured ? 'ghost' : 'primary') + '" data-token>' + (a.configured ? 'Generate new token' : 'Generate agent token') + '</button><div class="token-out"></div></div>' +
@@ -539,6 +612,30 @@
       '<p class="hint">Signed in as ' + h(BOOT.user) + '. <a href="' + h(BOOT.logout) + '">Sign out</a></p>' +
       '</div>';
     openDialog(inner, '', function (dlg) {
+      var form = dlg.querySelector('.sms-form');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var body = {
+          sms_enabled: form.sms_enabled.checked,
+          sms_sender: form.sms_sender.value.trim(),
+          sms_prefix: form.sms_prefix.value.trim(),
+          winddown_default: +form.winddown_default.value,
+          winddown_bedtime: form.winddown_bedtime.checked,
+          warn_minutes: form.warn_minutes.value.split(/[^0-9]+/).filter(Boolean).map(Number),
+          parents: parents.map(function (_, i) { return { name: form['pname' + i].value.trim(), phone: form['pphone' + i].value.trim() }; }),
+          templates: {}
+        };
+        Object.keys(sms.defaults).forEach(function (k) { body.templates[k] = form['tpl_' + k].value.trim(); });
+        if (form.brevo_api_key && form.brevo_api_key.value.trim()) body.brevo_api_key = form.brevo_api_key.value.trim();
+        mutate('POST', 'settings', body, 'Text settings saved').then(function () {
+          if (form.brevo_api_key) { form.brevo_api_key.value = ''; form.brevo_api_key.placeholder = 'Saved. Paste a new key to replace it'; }
+        }, function () {});
+      });
+      dlg.querySelector('[data-test-sms]').addEventListener('click', function () {
+        api('POST', 'sms/test', { phone: form.test_phone.value }).then(function () {
+          toast('Test text sent');
+        }).catch(function (err) { toast(err.message, true); });
+      });
       dlg.querySelectorAll('input[name=enf]').forEach(function (r) {
         r.addEventListener('change', function () { mutate('POST', 'settings', { enforcement: r.value }, 'Saved'); });
       });
@@ -614,6 +711,19 @@
         choiceSheet('Bonus time for ' + p.name, bonusChoices(), function (body) {
           mutate('POST', 'profiles/' + id + '/override', body, 'Bonus time started');
         });
+        break;
+      case 'winddown':
+        choiceSheet('Wind down ' + p.name, winddownChoices(), function (body) {
+          mutate('POST', 'profiles/' + id + '/override', body, body.delay ? 'Wind-down started' : p.name + ' paused');
+        });
+        break;
+      case 'winddown-all':
+        choiceSheet('Wind down everyone', winddownChoices(), function (body) {
+          mutate('POST', 'override-all', body, body.delay ? 'Wind-down started for everyone' : 'Everyone paused');
+        });
+        break;
+      case 'postpone':
+        mutate('POST', 'profiles/' + id + '/override', { mode: 'postpone', minutes: 5 }, '+5 minutes for ' + p.name);
         break;
       case 'extend':
         mutate('POST', 'profiles/' + id + '/override', { mode: 'allow', minutes: 15, extend: true }, '+15 minutes');

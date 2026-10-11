@@ -43,6 +43,7 @@ final class Family_Hub_REST {
 		register_rest_route( self::NS, "/profiles/{$id}/override", array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'override' ), 'permission_callback' => $parent ) );
 		register_rest_route( self::NS, '/override-all', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'override_all' ), 'permission_callback' => $parent ) );
 		register_rest_route( self::NS, '/settings', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'save_settings' ), 'permission_callback' => $parent ) );
+		register_rest_route( self::NS, '/sms/test', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'test_sms' ), 'permission_callback' => $parent ) );
 		register_rest_route( self::NS, '/agent/token', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'rotate_token' ), 'permission_callback' => $parent ) );
 	}
 
@@ -130,6 +131,8 @@ final class Family_Hub_REST {
 			}
 		}
 
+		Family_Hub_Notify::tick( $now );
+
 		$settings = Family_Hub_Store::settings();
 		return self::no_cache(
 			array(
@@ -201,6 +204,7 @@ final class Family_Hub_REST {
 		$items    = isset( $clients['items'] ) ? $clients['items'] : array();
 		$applied  = isset( $agent['applied'] ) ? $agent['applied'] : array();
 		$assigned = array();
+		$notify   = Family_Hub_Notify::state();
 
 		$profiles = array();
 		foreach ( Family_Hub_Store::profiles() as $p ) {
@@ -225,6 +229,9 @@ final class Family_Hub_REST {
 			}
 			$p['devices'] = $devices;
 			$p['status']  = $status;
+			$next         = Family_Hub_Notify::next_cutoff( $p, $now );
+			$p['cutoff']  = $next && $next['at'] - $now <= DAY_IN_SECONDS ? $next : null;
+			$p['extended'] = ! empty( $notify[ $p['id'] ]['extended'] ) && ! empty( $notify[ $p['id'] ]['target'] );
 			$p['pending'] = $pending && ! empty( $devices );
 			$profiles[]   = $p;
 		}
@@ -246,6 +253,12 @@ final class Family_Hub_REST {
 					'gateway'    => isset( $agent['gateway'] ) ? $agent['gateway'] : array(),
 				),
 				'settings' => $settings,
+				'sms'      => array(
+					'key_set'      => '' !== Family_Hub_Notify::api_key(),
+					'key_constant' => defined( 'FAMILY_HUB_BREVO_API_KEY' ),
+					'defaults'     => Family_Hub_Notify::default_templates(),
+				),
+				'window'   => Family_Hub_Notify::window( $settings ),
 				'events'   => Family_Hub_Store::events( 60 ),
 			)
 		);
@@ -303,12 +316,18 @@ final class Family_Hub_REST {
 			);
 		}
 
+		$phone = Family_Hub_Notify::normalize_phone( isset( $in['phone'] ) ? (string) $in['phone'] : '' );
+		if ( null === $phone ) {
+			return new WP_Error( 'invalid', 'That phone number is not valid.', array( 'status' => 400 ) );
+		}
+
 		$color   = isset( $in['color'] ) && in_array( $in['color'], Family_Hub_Store::COLORS, true ) ? $in['color'] : 'teal';
 		$profile = array(
 			'id'       => $existing ? $existing['id'] : Family_Hub_Store::new_profile_id(),
 			'name'     => substr( $name, 0, 40 ),
 			'color'    => $color,
 			'enabled'  => ! isset( $in['enabled'] ) || (bool) $in['enabled'],
+			'phone'    => $phone,
 			'devices'  => array_values( $devices ),
 			'schedule' => $schedule,
 			'override' => $existing && isset( $existing['override'] ) ? $existing['override'] : null,
@@ -342,6 +361,30 @@ final class Family_Hub_REST {
 		if ( 'clear' === $mode ) {
 			$profile['override'] = null;
 			return array( $profile, 'Back to schedule' );
+		}
+		if ( 'winddown' === $mode ) {
+			// Texts go out at the warning marks; internet goes off at the end.
+			$delay = isset( $in['delay'] ) ? min( 180, absint( $in['delay'] ) ) : (int) Family_Hub_Store::settings()['winddown_default'];
+			if ( Family_Hub_Schedule::status( $profile, $now )['blocked'] ) {
+				return array( $profile, null ); // Already offline: nothing to wind down.
+			}
+			$profile['override'] = array(
+				'mode'  => 'block',
+				'start' => $delay ? $now + $delay * 60 : null,
+				'until' => null,
+				'by'    => self::actor(),
+				'at'    => $now,
+			);
+			return array( $profile, $delay ? sprintf( 'Wind-down started: off at %s', wp_date( get_option( 'time_format', 'g:i a' ), $now + $delay * 60 ) ) : 'Paused internet' );
+		}
+		if ( 'postpone' === $mode ) {
+			$minutes = isset( $in['minutes'] ) ? min( 120, max( 1, absint( $in['minutes'] ) ) ) : 5;
+			$updated = Family_Hub_Notify::postpone( $profile, $minutes, $now );
+			if ( ! $updated ) {
+				return new WP_Error( 'invalid', 'There is no cutoff coming up to push back.', array( 'status' => 400 ) );
+			}
+			$next = Family_Hub_Notify::next_cutoff( $updated, $now );
+			return array( $updated, sprintf( '+%d min: off at %s', $minutes, wp_date( get_option( 'time_format', 'g:i a' ), $next ? $next['at'] : $now ) ) );
 		}
 		if ( ! in_array( $mode, array( 'block', 'allow' ), true ) ) {
 			return new WP_Error( 'invalid', 'Unknown mode.', array( 'status' => 400 ) );
@@ -391,6 +434,9 @@ final class Family_Hub_REST {
 			return $result;
 		}
 		list( $profile, $message ) = $result;
+		if ( null === $message ) {
+			return new WP_Error( 'invalid', $profile['name'] . ' is already offline.', array( 'status' => 400 ) );
+		}
 		Family_Hub_Store::put_profile( $profile );
 		Family_Hub_Store::log_event( 'override', $profile['name'] . ': ' . $message, array( 'actor' => self::actor(), 'profile_id' => $profile['id'] ) );
 		return self::state();
@@ -406,7 +452,8 @@ final class Family_Hub_REST {
 			if ( is_wp_error( $result ) ) {
 				return $result;
 			}
-			list( $profiles[ $i ], $message ) = $result;
+			list( $profiles[ $i ], $msg ) = $result;
+			$message                       = null === $msg ? $message : $msg;
 		}
 		Family_Hub_Store::save_profiles( $profiles );
 		Family_Hub_Store::log_event( 'override', 'Everyone: ' . $message, array( 'actor' => self::actor() ) );
@@ -422,9 +469,73 @@ final class Family_Hub_REST {
 		if ( isset( $in['poll_interval'] ) ) {
 			$settings['poll_interval'] = min( 120, max( 5, absint( $in['poll_interval'] ) ) );
 		}
+		foreach ( array( 'sms_enabled', 'winddown_bedtime' ) as $k ) {
+			if ( isset( $in[ $k ] ) ) {
+				$settings[ $k ] = (bool) $in[ $k ];
+			}
+		}
+		if ( isset( $in['sms_sender'] ) ) {
+			$settings['sms_sender'] = substr( preg_replace( '/[^A-Za-z0-9+ ]/', '', (string) $in['sms_sender'] ), 0, 15 );
+		}
+		if ( isset( $in['sms_prefix'] ) ) {
+			$settings['sms_prefix'] = substr( sanitize_text_field( (string) $in['sms_prefix'] ), 0, 30 );
+		}
+		if ( isset( $in['winddown_default'] ) ) {
+			$settings['winddown_default'] = min( 180, max( 1, absint( $in['winddown_default'] ) ) );
+		}
+		if ( isset( $in['warn_minutes'] ) && is_array( $in['warn_minutes'] ) ) {
+			$marks = array_values( array_unique( array_filter( array_map( 'absint', $in['warn_minutes'] ) ) ) );
+			rsort( $marks );
+			$settings['warn_minutes'] = $marks ? array_slice( array_map( function ( $m ) { return min( 120, $m ); }, $marks ), 0, 5 ) : array( 15 );
+		}
+		if ( isset( $in['parents'] ) && is_array( $in['parents'] ) ) {
+			$parents = array();
+			foreach ( array_slice( $in['parents'], 0, 4 ) as $parent ) {
+				$phone = Family_Hub_Notify::normalize_phone( isset( $parent['phone'] ) ? (string) $parent['phone'] : '' );
+				if ( null === $phone ) {
+					return new WP_Error( 'invalid', 'A parent phone number is not valid.', array( 'status' => 400 ) );
+				}
+				$name = isset( $parent['name'] ) ? substr( sanitize_text_field( (string) $parent['name'] ), 0, 30 ) : '';
+				if ( $phone || $name ) {
+					$parents[] = array( 'name' => $name, 'phone' => $phone );
+				}
+			}
+			$settings['parents'] = $parents;
+		}
+		if ( isset( $in['templates'] ) && is_array( $in['templates'] ) ) {
+			$templates = array();
+			foreach ( Family_Hub_Notify::default_templates() as $k => $default ) {
+				if ( isset( $in['templates'][ $k ] ) ) {
+					$value = substr( sanitize_text_field( (string) $in['templates'][ $k ] ), 0, 300 );
+					if ( '' !== $value && $value !== $default ) {
+						$templates[ $k ] = $value;
+					}
+				}
+			}
+			$settings['templates'] = $templates;
+		}
+		if ( isset( $in['brevo_api_key'] ) && ! defined( 'FAMILY_HUB_BREVO_API_KEY' ) ) {
+			// Write-only: never sent back to the browser.
+			update_option( Family_Hub_Notify::OPT_API_KEY, trim( sanitize_text_field( (string) $in['brevo_api_key'] ) ), false );
+		}
 		Family_Hub_Store::save_settings( $settings );
 		Family_Hub_Store::log_event( 'settings', 'Settings updated', array( 'actor' => self::actor() ) );
 		return self::state();
+	}
+
+	public static function test_sms( WP_REST_Request $request ) {
+		$phone = Family_Hub_Notify::normalize_phone( (string) $request->get_param( 'phone' ) );
+		if ( ! $phone ) {
+			return new WP_Error( 'invalid', 'Enter a phone number to test.', array( 'status' => 400 ) );
+		}
+		$settings = Family_Hub_Store::settings();
+		$result   = Family_Hub_Notify::send_sms( $phone, trim( $settings['sms_prefix'] . ': Test from Family Hub. Texts are working!' ) );
+		if ( is_wp_error( $result ) ) {
+			Family_Hub_Store::log_event( 'sms_failed', 'Test text failed: ' . $result->get_error_message(), array( 'actor' => self::actor(), 'source' => 'sms' ) );
+			return new WP_Error( 'sms_failed', $result->get_error_message(), array( 'status' => 502 ) );
+		}
+		Family_Hub_Store::log_event( 'sms_sent', 'Test text sent', array( 'actor' => self::actor(), 'source' => 'sms' ) );
+		return self::no_cache( array( 'ok' => true ) );
 	}
 
 	public static function rotate_token() {
