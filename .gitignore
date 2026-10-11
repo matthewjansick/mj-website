@@ -1,2 +1,26 @@
+# Python
 __pycache__/
 *.pyc
+
+# macOS / editors
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Build outputs
+*.zip
+
+# Family Hub secrets and local state: these live on the Mac mini, never in git
+family-hub/agent/agent.json
+agent.json
+mdm-state.json
+config-cache.json
+*.mobileconfig
+*.key
+*.pem
+*.p7
+*.req
+*.csr
+mdmcert.download.*
+secrets.env
