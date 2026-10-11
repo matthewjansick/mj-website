@@ -4,7 +4,7 @@
     "token": "PASTE-TOKEN-FROM-DASHBOARD-SETTINGS"
   },
   "unifi": {
-    "url": "https://192.168.1.1",
+    "url": "https://192.168.2.1",
     "site": "default",
 
     "api_key": "",

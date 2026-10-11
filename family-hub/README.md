@@ -73,7 +73,7 @@ cd family-hub/agent
 Fill in `~/Library/Application Support/FamilyHub/agent.json`:
 
 - `hub.url` / `hub.token`: from step 1.4
-- `unifi.url`: your gateway, usually `https://192.168.1.1`
+- `unifi.url`: your gateway, `https://192.168.2.1` (UniFi Dream Machine)
 - the API key **or** username/password from step 2
 
 Then identify the gateway and check everything works:
@@ -83,7 +83,7 @@ python3 ~/Library/Application\ Support/FamilyHub/familyhub_agent.py probe
 ```
 
 ```
-Gateway: https://192.168.1.1
+Gateway: https://192.168.2.1
   TLS certificate SHA-256: 3f9a…
   Controller type:   unifi_os
   Gateway model:     UCGMAX Home
