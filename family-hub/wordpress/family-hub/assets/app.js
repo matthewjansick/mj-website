@@ -216,14 +216,36 @@
     switch (s.reason) {
       case 'paused': return { tone: 'blocked', title: 'Paused', sub: s.until ? fmtUntil(s.until) : 'until you resume', icon: 'pause' };
       case 'downtime': return { tone: 'blocked', title: 'Downtime', sub: s.until ? fmtUntil(s.until) : 'scheduled', icon: 'moon' };
+      case 'limit': return { tone: 'blocked', title: 'Daily limit reached', sub: fmtMin(p.usage.today) + ' used · resets at midnight', icon: 'clock' };
       case 'bonus': return { tone: 'bonus', title: s.until ? 'Bonus time' : 'Allowed', sub: s.until ? fmtUntil(s.until) : 'schedule is off until you resume', icon: 'clock' };
       case 'disabled': return { tone: 'off', title: 'Not managed', sub: 'Family Hub is leaving these devices alone', icon: 'x' };
       default: return { tone: 'open', title: 'Internet on', sub: s.until ? 'Downtime starts ' + fmtTime(s.until, dayKey(s.until) !== dayKey(state.now)) : 'No downtime scheduled', icon: 'wifi' };
     }
   }
 
+  function fmtMin(m) {
+    m = Math.max(0, Math.round(m || 0));
+    if (m < 60) return m + ' min';
+    return Math.floor(m / 60) + 'h' + (m % 60 ? ' ' + (m % 60) + 'm' : '');
+  }
+
+  function usageLine(p) {
+    var u = p.usage;
+    if (!u || u.today == null || (!u.limit && !u.today && u.limit !== 0)) return '';
+    var pct = u.limit ? Math.min(100, Math.round(u.today / u.limit * 100)) : 0;
+    var week = u.week.filter(function (d) { return d.minutes != null; });
+    var avg = week.length ? Math.round(week.reduce(function (a, d) { return a + d.minutes; }, 0) / week.length) : null;
+    return '<div class="usage" title="Estimated from internet activity on the home network">' +
+      '<div class="usage-top"><span>Screen time today</span><strong>' + fmtMin(u.today) + (u.limit != null ? ' of ' + fmtMin(u.limit) : '') + '</strong></div>' +
+      (u.limit ? '<div class="meter' + (pct >= 100 ? ' full' : pct >= 80 ? ' near' : '') + '"><span style="width:' + pct + '%"></span></div>' : '') +
+      (avg != null && week.length > 1 ? '<small>7-day average ' + fmtMin(avg) + '</small>' : '') + '</div>';
+  }
+
   function mdmTags(m) {
     if (!m) return '';
+    if (m.platform === 'macos') {
+      return '<span class="tag managed" title="Managed Mac · macOS ' + h(m.os) + '. Cut off by the router at home; app Downtime and Lost Mode are iPhone/iPad only.">' + icon('apple') + 'managed Mac</span>';
+    }
     var out = '<span class="tag managed" title="Managed Apple device · iOS ' + h(m.os) + (m.battery != null ? ' · battery ' + h(m.battery) + '%' : '') + '">' + icon('apple') + 'managed</span>';
     if (m.supervised === false) out += '<span class="tag warn" title="Not supervised: Downtime and Lost Mode need supervision">not supervised</span>';
     if (m.locked) out += '<span class="tag blocked">' + icon('lock') + 'locked</span>';
@@ -274,11 +296,12 @@
     if (state.agent.gateway && state.agent.gateway.error && state.agent.online) {
       html += '<div class="banner bad">' + icon('warn') + '<span>Router: ' + h(state.agent.gateway.error) + '</span></div>';
     }
-    if (!state.agent.configured || !state.agent.last_seen) {
-      html += '<section class="setup"><h2>Finish setup</h2><ol>' +
-        '<li' + (state.agent.configured ? ' class="done"' : '') + '>Generate an agent token in <button class="link" data-act="settings">Settings</button>.</li>' +
-        '<li>Install the home agent on the Mac mini and run <code>probe</code> to identify your UniFi gateway.</li>' +
-        '<li' + (profiles.length ? ' class="done"' : '') + '>Add each kid and pick their devices.</li></ol></section>';
+    var steps = setupItems();
+    var done = steps.filter(function (x) { return x.state === 'done'; }).length;
+    if (done < steps.length) {
+      html += '<button class="setup-bar" data-act="setup"><span><strong>Setup ' + done + ' of ' + steps.length + '</strong> · next: ' +
+        h((steps.filter(function (x) { return x.state !== 'done'; })[0] || {}).title) + '</span><span class="meter"><span style="width:' +
+        Math.round(done / steps.length * 100) + '%"></span></span></button>';
     }
 
     if (profiles.length) {
@@ -329,7 +352,7 @@
     } else if (r === 'paused') {
       html += '<button class="btn primary big" data-act="clear" data-id="' + h(p.id) + '">' + icon('play') + 'Resume</button>';
       html += '<button class="btn ghost" data-act="pause" data-id="' + h(p.id) + '">Change</button>';
-    } else if (r === 'downtime') {
+    } else if (r === 'downtime' || r === 'limit') {
       html += '<button class="btn primary big" data-act="bonus" data-id="' + h(p.id) + '">' + icon('clock') + 'Give bonus time</button>';
     } else if (r === 'bonus') {
       if (p.status.until) html += '<button class="btn ghost" data-act="extend" data-id="' + h(p.id) + '">+15 min</button>';
@@ -357,7 +380,9 @@
       html += '<p class="hint">No devices yet. <button class="link" data-act="edit" data-id="' + h(p.id) + '">Add devices</button></p>';
     }
 
-    var managed = p.devices.filter(function (d) { return d.mdm; });
+    html += usageLine(p);
+
+    var managed = p.devices.filter(function (d) { return d.mdm && d.mdm.platform !== 'macos'; });
     if (managed.length) {
       html += '<div class="lockrow">' + (p.lock
         ? '<span class="tag blocked">' + icon('lock') + 'Locked (Lost Mode)</span><button class="btn ghost small" data-act="unlock" data-id="' + h(p.id) + '">Unlock devices</button>'
@@ -435,6 +460,15 @@
 
   // -- profile editor
 
+  function limitSelect(name, label, value) {
+    var opts = [['', 'No limit'], [30, '30 min'], [45, '45 min'], [60, '1 hour'], [90, '1.5 hours'], [120, '2 hours'],
+      [150, '2.5 hours'], [180, '3 hours'], [240, '4 hours'], [300, '5 hours']];
+    if (value != null && !opts.some(function (o) { return o[0] === value; })) opts.push([value, fmtMin(value)]);
+    return '<label class="field"><span>' + h(label) + '</span><select name="' + name + '">' + opts.map(function (o) {
+      return '<option value="' + o[0] + '"' + ((value == null ? '' : value) === o[0] ? ' selected' : '') + '>' + h(o[1]) + '</option>';
+    }).join('') + '</select></label>';
+  }
+
   function editProfile(id) {
     var p = id ? profileById(id) : null;
     var draft = {
@@ -443,7 +477,8 @@
       enabled: p ? p.enabled : true,
       phone: p ? (p.phone || '') : '',
       devices: p ? p.devices.map(function (d) { return { mac: d.mac, label: d.label }; }) : [],
-      schedule: p ? JSON.parse(JSON.stringify(p.schedule)) : []
+      schedule: p ? JSON.parse(JSON.stringify(p.schedule)) : [],
+      allowance: p && p.allowance ? p.allowance.slice() : [null, null, null, null, null, null, null]
     };
     var filter = '';
 
@@ -507,6 +542,8 @@
       '<input type="search" class="filter" placeholder="Search by name, maker, MAC or IP">' +
       '<div class="picker">' + devicePicker() + '</div>' +
       '<details class="manual"><summary>Add a device by MAC address</summary><div class="row"><input class="mac-in" placeholder="aa:bb:cc:dd:ee:ff"><input class="label-in" placeholder="Label (e.g. Xbox)"><button type="button" class="btn ghost" data-add-mac>Add</button></div></details>' +
+      '<h4>Daily screen-time limit</h4><p class="hint">Counted while their devices are actually busy on the home network (an estimate; phones on cellular aren’t seen). When it runs out, their internet turns off until midnight, with texts at the warning marks first.</p>' +
+      '<div class="two">' + limitSelect('limit_weekday', 'Mon–Fri', draft.allowance[1]) + limitSelect('limit_weekend', 'Sat & Sun', draft.allowance[0]) + '</div>' +
       '<h4>Downtime</h4><p class="hint">Internet is off during these windows. Bonus time and pauses override it.</p>' +
       '<div class="rules">' + scheduleRows() + '</div>' +
       '<div class="presets"><button type="button" class="btn ghost small" data-preset="school">+ School nights 9 PM–7 AM</button><button type="button" class="btn ghost small" data-preset="weekend">+ Weekend nights 10:30 PM–8 AM</button><button type="button" class="btn ghost small" data-preset="custom">+ Custom</button></div>' +
@@ -586,6 +623,9 @@
         }
         draft.name = form.name.value.trim();
         draft.phone = form.phone.value.trim();
+        var wd = form.limit_weekday.value === '' ? null : +form.limit_weekday.value;
+        var we = form.limit_weekend.value === '' ? null : +form.limit_weekend.value;
+        draft.allowance = [we, wd, wd, wd, wd, wd, we];
         mutate(p ? 'PUT' : 'POST', p ? 'profiles/' + p.id : 'profiles', draft, 'Saved').then(function () { dlg.close(); }, function () {});
       });
       if (!p) form.name.focus();
@@ -668,6 +708,9 @@
       '<h4>How to block</h4>' +
       '<label class="radio"><input type="radio" name="enf" value="client_block"' + (s.enforcement === 'client_block' ? ' checked' : '') + '><span><strong>Block devices</strong><small>Kicks devices off Wi-Fi and stops them rejoining. Works on every UniFi version. Wi-Fi only.</small></span></label>' +
       '<label class="radio"><input type="radio" name="enf" value="traffic_rule"' + (s.enforcement === 'traffic_rule' ? ' checked' : '') + '><span><strong>Traffic rules</strong><small>Cuts internet access but stays on the local network. Also works for wired devices like a cabled Xbox. Needs Network 7.0+ (run <code>probe</code> to check).</small></span></label>' +
+      '<label class="field"><span>Count a minute as screen time when a device moves more than</span><select name="usage_kb">' + [100, 250, 500, 1000].map(function (n) {
+        return '<option value="' + n + '"' + (+s.usage_threshold_kb === n ? ' selected' : '') + '>' + (n >= 1000 ? n / 1000 + ' MB' : n + ' KB') + (n === 250 ? ' (default)' : '') + '</option>';
+      }).join('') + '</select></label>' +
       '<label class="field"><span>Agent check-in interval</span><select name="poll">' + [5, 10, 15, 30, 60].map(function (n) {
         return '<option value="' + n + '"' + (+s.poll_interval === n ? ' selected' : '') + '>Every ' + n + ' seconds</option>';
       }).join('') + '</select></label>' +
@@ -708,6 +751,9 @@
       dlg.querySelectorAll('input[name=enf]').forEach(function (r) {
         r.addEventListener('change', function () { mutate('POST', 'settings', { enforcement: r.value }, 'Saved'); });
       });
+      dlg.querySelector('select[name=usage_kb]').addEventListener('change', function (e) {
+        mutate('POST', 'settings', { usage_threshold_kb: +e.target.value }, 'Saved');
+      });
       dlg.querySelector('select[name=poll]').addEventListener('change', function (e) {
         mutate('POST', 'settings', { poll_interval: +e.target.value }, 'Saved');
       });
@@ -723,6 +769,54 @@
         }).catch(function (err) { toast(err.message, true); });
       });
     });
+  }
+
+  // -- setup checklist
+
+  function setupItems() {
+    var a = state.agent, s = state.settings, sms = state.sms, m = state.mdm, profiles = state.profiles || [];
+    var kidsWithDevices = profiles.filter(function (p) { return p.devices.length; });
+    var privateMacs = [];
+    profiles.forEach(function (p) { p.devices.forEach(function (d) { if (d.client && d.client.randomized) privateMacs.push(deviceName(d)); }); });
+    var parents = (s.parents || []).filter(function (x) { return x.phone; });
+    var enrolled = m ? (m.devices || []).filter(function (d) { return d.enrolled; }) : [];
+    var unsupervised = enrolled.filter(function (d) { return d.supervised === false; });
+    var unassigned = enrolled.filter(function (d) { return !d.wifi_mac || !state.assigned[d.wifi_mac]; });
+    var certLeft = m && m.push_cert_expires ? Date.parse(m.push_cert_expires) / 1000 - state.now : null;
+    function item(group, title, ok, how, where, warn) {
+      return { group: group, title: title, state: ok ? 'done' : warn ? 'warn' : 'todo', how: how, where: where };
+    }
+    return [
+      item('Home network', 'Generate the agent token', a.configured, 'Settings → Generate agent token. Copy the snippet into the Mac mini’s agent.json.', 'phone'),
+      item('Home network', 'Home agent running on the Mac mini', a.online, 'Run install-macos.sh on the Mac mini (README step 3).', 'mac'),
+      item('Home network', 'Router connected', a.online && a.gateway && a.gateway.ok, 'Create the local “familyhub” admin in the UniFi app (Admins), put it in agent.json, run probe.', 'phone + mac'),
+      item('Home network', 'Kids and their devices added', kidsWithDevices.length > 0, 'Add a kid, tick their devices.', 'phone'),
+      item('Home network', 'No private Wi-Fi addresses', kidsWithDevices.length > 0 && !privateMacs.length,
+        privateMacs.length ? 'Turn off Private Wi-Fi Address for home Wi-Fi on: ' + privateMacs.join(', ') + '. Supervised devices get this forced.' : 'Checked once devices are added.', 'kid’s device', privateMacs.length > 0),
+      item('Text alerts', 'Brevo connected and texts on', s.sms_enabled && sms.key_set, 'Settings → Text alerts: paste the Brevo API key, tick “Send texts”, Send test.', 'phone'),
+      item('Text alerts', 'Both parents’ phones added', parents.length >= 2, 'Settings → Text alerts → Parents.', 'phone', parents.length === 1),
+      item('Text alerts', 'Kids’ phone numbers', profiles.length > 0 && profiles.every(function (p) { return p.phone; }), 'Edit each kid → Phone for text alerts (kids without a phone just get no texts).', 'phone', profiles.some(function (p) { return p.phone; })),
+      item('Apple devices', 'Management server installed', !!m, 'Pick the tunnel address, then run install-mdm-macos.sh on the Mac mini (README 7a–7b).', 'mac'),
+      item('Apple devices', 'Apple push certificate', certLeft != null && certLeft > 30 * 86400,
+        certLeft == null ? 'mdmcert.download (register now from your phone), then identity.apple.com (README 7c).' : 'Renew at identity.apple.com with the same Apple Account (README 7c).', 'phone + mac', certLeft != null),
+      item('Apple devices', 'Kids’ iPhones/iPads supervised', enrolled.length > 0 && !unsupervised.length,
+        unsupervised.length ? unsupervised.length + ' enrolled device(s) not supervised: redo with Apple Configurator (README 7e).' : 'Back up, supervise with Apple Configurator, restore, enroll (README 7e).', 'mac', unsupervised.length > 0),
+      item('Apple devices', 'Managed devices assigned to kids', enrolled.length > 0 && !unassigned.length, 'Edit the kid and tick the device (shown as “Apple · managed”).', 'phone', unassigned.length > 0)
+    ];
+  }
+
+  function openSetup() {
+    var steps = setupItems();
+    var groups = [];
+    steps.forEach(function (x) { if (groups.indexOf(x.group) === -1) groups.push(x.group); });
+    var inner = '<div class="sheet-head"><h3>Setup checklist</h3><button class="icon-btn" data-close aria-label="Close">' + icon('x') + '</button></div><div class="sheet-body">' +
+      groups.map(function (g) {
+        return '<h4>' + h(g) + '</h4><ul class="checklist">' + steps.filter(function (x) { return x.group === g; }).map(function (x) {
+          return '<li class="st-' + x.state + '"><span class="mark" aria-hidden="true">' + (x.state === 'done' ? '✓' : x.state === 'warn' ? '!' : '') + '</span>' +
+            '<div><strong>' + h(x.title) + '</strong>' + (x.state !== 'done' ? '<small>' + h(x.how) + '</small><span class="where">' + h(x.where) + '</span>' : '') + '</div></li>';
+        }).join('') + '</ul>';
+      }).join('') + '<p class="hint">Full steps are in the README (family-hub/README.md).</p></div>';
+    openDialog(inner);
   }
 
   // -- activity
@@ -769,6 +863,7 @@
       case 'reload': location.reload(); break;
       case 'settings': openSettings(); break;
       case 'activity': openActivity(); break;
+      case 'setup': openSetup(); break;
       case 'new': editProfile(null); break;
       case 'edit': editProfile(id); break;
       case 'pause':

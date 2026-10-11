@@ -1,0 +1,92 @@
+name: Family Hub
+
+on:
+  push:
+    paths: ["family-hub/**", ".github/workflows/family-hub.yml"]
+  pull_request:
+    paths: ["family-hub/**", ".github/workflows/family-hub.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  agent:
+    name: Agent (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.12"]   # 3.9 = what ships with macOS
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: false
+      - name: Build NanoMDM and SCEP (same versions as install-mdm-macos.sh)
+        run: |
+          export GOBIN="$RUNNER_TEMP/mdm-bin"
+          go install github.com/micromdm/nanomdm/cmd/nanomdm@v0.9.0
+          go install github.com/micromdm/scep/v2/cmd/scepserver@v2.3.0
+          go install github.com/micromdm/scep/v2/cmd/scepclient@v2.3.0
+          echo "FAMILYHUB_MDM_BIN=$GOBIN" >> "$GITHUB_ENV"
+      - name: Unit + integration tests (real NanoMDM, simulated iPhone)
+        run: python -m unittest discover -v -s family-hub/agent/tests
+      - name: Shell scripts parse
+        run: for f in family-hub/agent/*.sh; do bash -n "$f"; done
+
+  plugin:
+    name: WordPress plugin (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ["7.4", "8.3"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_sqlite, sqlite3, mbstring
+          tools: wp-cli
+      - name: Lint PHP
+        run: find family-hub/wordpress -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Check dashboard JavaScript
+        run: node --check family-hub/wordpress/family-hub/assets/app.js
+      - name: WordPress (SQLite) with the plugin
+        run: |
+          WP="$RUNNER_TEMP/wp"
+          mkdir -p "$WP" && cd "$WP"
+          wp core download --quiet
+          curl -sSfL -o sqlite.zip https://downloads.wordpress.org/plugin/sqlite-database-integration.latest-stable.zip
+          unzip -q sqlite.zip -d wp-content/plugins
+          sed -e "s#{SQLITE_IMPLEMENTATION_FOLDER_PATH}#$WP/wp-content/plugins/sqlite-database-integration#" \
+              -e "s#{SQLITE_PLUGIN}#sqlite-database-integration/load.php#" \
+              wp-content/plugins/sqlite-database-integration/db.copy > wp-content/db.php
+          wp config create --dbname=wp --dbuser=x --dbpass=x --skip-check --quiet \
+            --extra-php <<<"define('DB_DIR', __DIR__.'/wp-content/database/');"
+          wp core install --url=http://localhost --title=Test --admin_user=admin --admin_password=pass \
+            --admin_email=admin@example.com --skip-email --quiet
+          wp option update timezone_string America/New_York --quiet
+          wp rewrite structure '/%postname%/' --quiet
+          ln -s "$GITHUB_WORKSPACE/family-hub/wordpress/family-hub" wp-content/plugins/family-hub
+          wp plugin activate family-hub --quiet
+      - name: Plugin tests (wind-down texts, screen-time limits, Apple devices)
+        run: |
+          cd "$RUNNER_TEMP/wp"
+          for t in notify-test limit-test mdm-test; do
+            echo "== $t"
+            out=$(wp eval-file "$GITHUB_WORKSPACE/family-hub/wordpress/tests/$t.php" 2>&1)
+            echo "$out"
+            echo "$out" | grep -q "ALL PASSED"
+            ! echo "$out" | grep -E -q "FAIL|Warning:|Fatal"
+          done
+      - name: Build plugin zip
+        if: matrix.php == '8.3'
+        run: cd family-hub/wordpress && zip -qr "$RUNNER_TEMP/family-hub-plugin.zip" family-hub
+      - uses: actions/upload-artifact@v4
+        if: matrix.php == '8.3'
+        with:
+          name: family-hub-plugin
+          path: ${{ runner.temp }}/family-hub-plugin.zip

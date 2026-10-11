@@ -40,7 +40,7 @@ try:
 except ImportError:  # pragma: no cover - Python < 3.9
     ZoneInfo = None  # type: ignore
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 LOG = logging.getLogger("familyhub")
 MAC_RE = re.compile(r"^([0-9a-f]{2}:){5}[0-9a-f]{2}$")
 CLIENT_REPORT_INTERVAL = 60  # seconds between full client-list uploads
@@ -117,8 +117,21 @@ def in_downtime(rules: Optional[List[dict]], local_dt: datetime) -> bool:
     return False
 
 
-def profile_state(profile: dict, now_ts: float, tz) -> Tuple[bool, str]:
-    """Return (blocked, reason) for a kid profile at now_ts."""
+def daily_limit(profile: dict, local_dt: datetime) -> Optional[int]:
+    """Today's screen-time allowance in minutes, or None for no limit."""
+    allowance = profile.get("allowance") or []
+    day = local_dt.isoweekday() % 7
+    if len(allowance) == 7 and allowance[day] is not None:
+        try:
+            return max(0, int(allowance[day]))
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def profile_state(profile: dict, now_ts: float, tz, used: Optional[int] = None) -> Tuple[bool, str]:
+    """Return (blocked, reason) for a kid profile at now_ts. `used` is today's
+    screen time in minutes, if known."""
     if not profile.get("enabled", True):
         return False, "disabled"
     override = profile.get("override") or {}
@@ -128,20 +141,25 @@ def profile_state(profile: dict, now_ts: float, tz) -> Tuple[bool, str]:
             and (until is None or until > now_ts):
         return mode == "block", "override"
     local = datetime.fromtimestamp(now_ts, tz)
+    limit = daily_limit(profile, local)
+    if limit is not None and used is not None and used >= limit:
+        return True, "limit"
     if in_downtime(profile.get("schedule"), local):
         return True, "schedule"
     return False, "schedule"
 
 
-def desired_device_state(config: dict, now_ts: float) -> Dict[str, Tuple[bool, str]]:
+def desired_device_state(config: dict, now_ts: float,
+                         usage: Optional[Dict[str, int]] = None) -> Dict[str, Tuple[bool, str]]:
     """mac -> (blocked, profile_id). A device in two profiles is blocked if
     either profile is blocked."""
     tz = resolve_tz(config.get("timezone"))
+    usage = usage or {}
     desired: Dict[str, Tuple[bool, str]] = {}
     for profile in config.get("profiles", []):
         if not profile.get("enabled", True):
             continue
-        blocked, _ = profile_state(profile, now_ts, tz)
+        blocked, _ = profile_state(profile, now_ts, tz, usage.get(profile.get("id", "")))
         for mac in profile.get("devices", []):
             mac = norm_mac(mac)
             if not mac:
@@ -349,6 +367,9 @@ class UniFiGateway:
                 "wired": bool(c.get("is_wired", entry["wired"])),
                 "network": c.get("essid") or c.get("network") or "",
                 "last_seen": int(c.get("last_seen") or time.time()),
+                # Session byte counters, for the screen-time estimate (not sent to the hub).
+                "bytes": int(c.get("tx_bytes") or 0) + int(c.get("rx_bytes") or 0)
+                + int(c.get("wired-tx_bytes") or 0) + int(c.get("wired-rx_bytes") or 0),
             })
             entry["name"] = entry["name"] or c.get("name") or ""
             entry["hostname"] = entry["hostname"] or c.get("hostname") or ""
@@ -414,16 +435,82 @@ def new_traffic_rule(description: str, macs: List[str], enabled: bool) -> dict:
 # Enforcement
 # --------------------------------------------------------------------------
 
+class UsageTracker:
+    """Estimates today's screen time per kid from internet activity on the home
+    network: a minute counts when any of the kid's devices moves more than the
+    threshold in that minute. Devices on cellular aren't seen, so this is a
+    floor, not an exact figure. Resets at local midnight."""
+
+    def __init__(self, state: dict):
+        self.state = state
+        self.state.setdefault("usage", {"day": "", "minutes": {}, "last_minute": {}})
+        self.prev: Dict[str, int] = {}      # mac -> last byte counter seen
+        self.bucket: Dict[str, int] = {}    # mac -> bytes moved in the current minute
+        self.minute = -1
+
+    @property
+    def today(self) -> Dict[str, int]:
+        return dict(self.state["usage"]["minutes"])
+
+    def observe(self, clients: List[dict], config: dict, now_ts: float) -> bool:
+        """Feed one client sample. Returns True if any count changed."""
+        tz = resolve_tz(config.get("timezone"))
+        local = datetime.fromtimestamp(now_ts, tz)
+        u = self.state["usage"]
+        day = local.strftime("%Y-%m-%d")
+        if u["day"] != day:
+            u.update({"day": day, "minutes": {}, "last_minute": {}})
+        minute = int(now_ts // 60)
+        if minute != self.minute:
+            self.minute, self.bucket = minute, {}
+        threshold = int(config.get("usage_threshold_kb", 250)) * 1024
+
+        owners: Dict[str, List[str]] = {}
+        for profile in config.get("profiles", []):
+            for mac in profile.get("devices", []):
+                mac = norm_mac(mac)
+                if mac:
+                    owners.setdefault(mac, []).append(profile.get("id", ""))
+
+        changed = False
+        for c in clients:
+            mac = c.get("mac")
+            if mac not in owners or not c.get("online"):
+                continue
+            total = int(c.get("bytes") or 0)
+            before = self.prev.get(mac)
+            self.prev[mac] = total
+            if before is None:
+                continue  # first sample: no baseline yet
+            delta = total - before if total >= before else total  # counter reset on reconnect
+            self.bucket[mac] = self.bucket.get(mac, 0) + delta
+            if self.bucket[mac] < threshold:
+                continue
+            for pid in owners[mac]:
+                if u["last_minute"].get(pid) != minute:
+                    u["last_minute"][pid] = minute
+                    u["minutes"][pid] = u["minutes"].get(pid, 0) + 1
+                    changed = True
+        return changed
+
+    def report(self) -> dict:
+        u = self.state["usage"]
+        return {"day": u["day"], "minutes": dict(u["minutes"])}
+
+
 class Enforcer:
     def __init__(self, gateway: UniFiGateway, state_path: str):
         self.gw = gateway
         self.state_path = state_path
         self.state = load_json(state_path, {"owned": []})
+        self.usage: Dict[str, int] = {}
 
     def _save(self) -> None:
         save_json(self.state_path, self.state)
 
-    def apply(self, config: dict, clients: List[dict], now_ts: float) -> Tuple[List[dict], Dict[str, bool]]:
+    def apply(self, config: dict, clients: List[dict], now_ts: float,
+              usage: Optional[Dict[str, int]] = None) -> Tuple[List[dict], Dict[str, bool]]:
+        self.usage = usage or {}
         method = config.get("enforcement", "client_block")
         events: List[dict] = []
         if self.state.get("method", "client_block") != method:
@@ -461,7 +548,7 @@ class Enforcer:
         return events
 
     def _apply_client_block(self, config, clients, now_ts):
-        desired = desired_device_state(config, now_ts)
+        desired = desired_device_state(config, now_ts, self.usage)
         current = {c["mac"]: c.get("blocked", False) for c in clients}
         owned = set(self.state.get("owned", []))
         events: List[dict] = []
@@ -515,7 +602,8 @@ class Enforcer:
             pid = profile.get("id", "")
             seen.add(pid)
             macs = sorted({m for m in (norm_mac(x) for x in profile.get("devices", [])) if m})
-            blocked = profile.get("enabled", True) and profile_state(profile, now_ts, tz)[0]
+            blocked = profile.get("enabled", True) and \
+                profile_state(profile, now_ts, tz, self.usage.get(pid))[0]
             # Never enable a rule with no targets: an empty target list could
             # match every device on the network.
             want_enabled = bool(blocked and macs)
@@ -556,14 +644,16 @@ class Enforcer:
         return events, applied
 
 
-def mdm_targets(config: dict, now_ts: float) -> Dict[str, Tuple[bool, bool, str]]:
+def mdm_targets(config: dict, now_ts: float,
+                usage: Optional[Dict[str, int]] = None) -> Dict[str, Tuple[bool, bool, str]]:
     """Wi-Fi MAC -> (blocked, locked, profile_id) for every device assigned to a kid."""
     tz = resolve_tz(config.get("timezone"))
+    usage = usage or {}
     out: Dict[str, Tuple[bool, bool, str]] = {}
     for profile in config.get("profiles", []):
         if not profile.get("enabled", True):
             continue
-        blocked, _ = profile_state(profile, now_ts, tz)
+        blocked, _ = profile_state(profile, now_ts, tz, usage.get(profile.get("id", "")))
         locked = bool(profile.get("lock"))
         for mac in profile.get("devices", []):
             mac = norm_mac(mac)
@@ -649,6 +739,7 @@ class Agent:
         self.gateway = UniFiGateway(cfg["unifi"])
         self.hub = HubClient(cfg["hub"])
         self.enforcer = Enforcer(self.gateway, os.path.join(data_dir, "state.json"))
+        self.usage = UsageTracker(self.enforcer.state)
         self.config: Optional[dict] = load_json(self.cache_path, None)
         self.pending_events: List[dict] = []
         self.applied: Dict[str, bool] = {}
@@ -687,11 +778,13 @@ class Agent:
 
         events: List[dict] = []
         if self.config is not None and clients is not None:
-            more, self.applied = self.enforcer.apply(self.config, clients, now)
+            if self.usage.observe(clients, self.config, now):
+                self.enforcer._save()  # survive restarts mid-day
+            more, self.applied = self.enforcer.apply(self.config, clients, now, self.usage.today)
             events.extend(more)
         if self.config is not None and self.mdm:
             # Phones are managed even when the router is unreachable.
-            self.mdm.reconcile(mdm_targets(self.config, now), self.config.get("mdm") or {}, now)
+            self.mdm.reconcile(mdm_targets(self.config, now, self.usage.today), self.config.get("mdm") or {}, now)
             events.extend(self.mdm.drain_events())
         for e in events:
             LOG.info("%s %s %s %s", e["type"], e["profile_id"], e["mac"], e["message"])
@@ -709,6 +802,7 @@ class Agent:
             "gateway": dict(self.gateway_info, ok=not self.gateway_error, error=self.gateway_error),
             "applied": self.applied,
             "events": sent_events,
+            "usage": self.usage.report(),
         }
         if clients is not None:
             payload["clients"] = clients

@@ -124,7 +124,18 @@ def downtime_profile(apps: List[str]) -> bytes:
     }], "Screens are off. Only essential apps can be opened.")
 
 
-def baseline_profile(settings: dict) -> bytes:
+def platform_of(product: str) -> str:
+    """'macos' for Macs (ProductName like Mac14,2 / MacBookPro18,3 / iMac21,1), else 'ios'."""
+    return "macos" if (product or "").startswith(("Mac", "iMac")) else "ios"
+
+
+def baseline_profile(settings: dict, platform: str = "ios") -> bytes:
+    if platform == "macos":
+        # Macs: no erasing; everything else on the home network is handled by the router.
+        restrictions = {"PayloadType": "com.apple.applicationaccess",
+                        "PayloadDisplayName": "Family Hub restrictions",
+                        "allowEraseContentAndSettings": False}
+        return _baseline(settings, restrictions)
     restrictions = {
         "PayloadType": "com.apple.applicationaccess",
         "PayloadDisplayName": "Family Hub restrictions",
@@ -135,6 +146,10 @@ def baseline_profile(settings: dict) -> bytes:
         "allowESIMModification": False,
         "forceAutomaticDateAndTime": True,
     }
+    return _baseline(settings, restrictions)
+
+
+def _baseline(settings: dict, restrictions: dict) -> bytes:
     payloads = [restrictions]
     wifi = settings.get("home_wifi") or {}
     if wifi.get("ssid"):
@@ -373,6 +388,7 @@ class MDMManager:
                                  ("Model", "model"), ("OSVersion", "os"), ("DeviceName", "name")):
                 if payload.get(k_src):
                     dev[k_dst] = payload[k_src]
+            dev["platform"] = platform_of(dev.get("product", ""))
             self._event("mdm_enrolled", udid, "enrolled in device management")
         elif topic == "mdm.TokenUpdate":
             dev["enrolled"] = True
@@ -428,6 +444,8 @@ class MDMManager:
         for src, dst in mapping.items():
             if q.get(src):
                 dev[dst] = str(q[src])
+        if q.get("ProductName"):
+            dev["platform"] = platform_of(str(q["ProductName"]))
         if q.get("WiFiMAC"):
             dev["wifi_mac"] = norm_mac(q["WiFiMAC"]) or dev.get("wifi_mac")
         if "IsSupervised" in q:
@@ -476,10 +494,13 @@ class MDMManager:
                 blocked, locked, pid = desired.get(dev.get("wifi_mac") or "", (False, False, ""))
                 if now - dev.get("info_at", 0) > INFO_REFRESH and "info" not in dev["pending"]:
                     self._send(dev, "info", "DeviceInformation", {"Queries": INFO_QUERIES}, None)
+                is_mac = dev.get("platform") == "macos"
                 targets = {
-                    "baseline": want_baseline,
-                    "downtime": want_downtime if blocked else False,
-                    "lost": want_lost if locked else False,
+                    "baseline": want_baseline + ("-mac" if is_mac else ""),
+                    # Downtime profiles and Lost Mode are iPhone/iPad features. Macs are
+                    # cut off by the router at home instead.
+                    "downtime": want_downtime if blocked and not is_mac else False,
+                    "lost": want_lost if locked and not is_mac else False,
                 }
                 for aspect in ASPECTS:
                     want = targets[aspect]
@@ -500,7 +521,8 @@ class MDMManager:
                     if now < dev["retry_at"].get(aspect, 0):
                         continue
                     if aspect == "baseline":
-                        self._send(dev, aspect, "InstallProfile", {"Payload": baseline_profile(baseline_cfg)}, want)
+                        profile = baseline_profile(baseline_cfg, "macos" if is_mac else "ios")
+                        self._send(dev, aspect, "InstallProfile", {"Payload": profile}, want)
                     elif aspect == "downtime":
                         if want:
                             self._send(dev, aspect, "InstallProfile", {"Payload": downtime_profile(apps)}, want, pid)
@@ -543,6 +565,7 @@ class MDMManager:
                     "udid": d["udid"],
                     "name": d.get("name", ""),
                     "product": d.get("product", ""),
+                    "platform": d.get("platform", "ios"),
                     "model": d.get("model_name") or d.get("model", ""),
                     "os": d.get("os", ""),
                     "serial": d.get("serial", ""),

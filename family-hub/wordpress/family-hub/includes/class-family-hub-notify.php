@@ -21,6 +21,7 @@ final class Family_Hub_Notify {
 	const OPT_STATE   = 'family_hub_notify_state';
 	const OPT_LOCK    = 'family_hub_notify_lock';
 	const OPT_API_KEY = 'family_hub_brevo_api_key';
+	const OPT_LIMITS  = 'family_hub_limit_state';
 	const CRON_HOOK   = 'family_hub_tick';
 	const EXTEND_MIN  = 5;
 	const CONFIRM_SEC = 180; // Warn parents if the agent hasn't confirmed a cutoff by then.
@@ -47,6 +48,8 @@ final class Family_Hub_Notify {
 			'extended'           => '{prefix}: OK, 5 more minutes. Screens off at {time}.',
 			'moved'              => '{prefix}: Change of plans. Screens off at {time}.',
 			'cancelled'          => '{prefix}: Never mind, screens can stay on for now.',
+			'limit_warn'         => '{prefix}: {minutes} min of screen time left today.',
+			'limit_cutoff'       => '{prefix}: That is all your screen time for today. See you tomorrow!',
 			'parent_cutoff'      => 'Family Hub: {names} offline now.',
 			'parent_extended'    => 'Family Hub: {name} used their +5 min. Off at {time}.',
 			'parent_unconfirmed' => 'Family Hub: {names} should be offline, but the home agent has not confirmed it. Check the Mac mini.',
@@ -156,6 +159,8 @@ final class Family_Hub_Notify {
 		$window   = self::window( $settings );
 		$offline  = array();
 		$unknown  = array();
+		$limits   = get_option( self::OPT_LIMITS, array() );
+		$limits   = is_array( $limits ) ? $limits : array();
 
 		$ids = array();
 		foreach ( Family_Hub_Store::profiles() as $p ) {
@@ -170,7 +175,7 @@ final class Family_Hub_Notify {
 				if ( ! $s['blocked'] ) {
 					// Just went offline.
 					$s = array_merge( self::blank(), array( 'blocked' => true, 'blocked_at' => $now, 'confirmed' => false ) );
-					self::text_kid( $p, 'cutoff', $vars );
+					self::text_kid( $p, 'limit' === $st['reason'] ? 'limit_cutoff' : 'cutoff', $vars );
 				}
 				if ( ! $s['confirmed'] ) {
 					$macs = wp_list_pluck( $p['devices'], 'mac' );
@@ -193,6 +198,7 @@ final class Family_Hub_Notify {
 			}
 
 			$s['blocked'] = false;
+			self::limit_warnings( $p, $now, $marks, $limits, $vars );
 			$next         = self::next_cutoff( $p, $now );
 			if ( $next && 'bedtime' === $next['source'] && empty( $settings['winddown_bedtime'] ) ) {
 				$next = null;
@@ -257,6 +263,7 @@ final class Family_Hub_Notify {
 
 		$state = array_intersect_key( $state, array_flip( $ids ) );
 		self::save_state( $state );
+		update_option( self::OPT_LIMITS, array_intersect_key( $limits, array_flip( $ids ) ), false );
 
 		if ( $offline ) {
 			self::text_parents( 'parent_cutoff', array( 'names' => self::join_names( $offline ) ) );
@@ -264,6 +271,37 @@ final class Family_Hub_Notify {
 		if ( $unknown ) {
 			self::text_parents( 'parent_unconfirmed', array( 'names' => self::join_names( $unknown ) ) );
 		}
+	}
+
+	/**
+	 * "15 min of screen time left today" texts. Screen time only counts while a
+	 * device is busy, so these follow usage, not the clock. One text per mark per day.
+	 */
+	private static function limit_warnings( array $p, $now, array $marks, array &$limits, array $vars ) {
+		$settings = Family_Hub_Store::settings();
+		if ( empty( $settings['winddown_bedtime'] ) ) {
+			return; // the same switch controls automatic (not parent-started) warnings
+		}
+		$limit = Family_Hub_Schedule::daily_limit( $p, Family_Hub_Schedule::local( $now ) );
+		$used  = Family_Hub_Store::usage_today( $p['id'] );
+		if ( null === $limit || null === $used ) {
+			return;
+		}
+		$day = wp_date( 'Y-m-d', $now );
+		$l   = isset( $limits[ $p['id'] ] ) && $limits[ $p['id'] ]['day'] === $day ? $limits[ $p['id'] ] : array( 'day' => $day, 'sent' => array() );
+		$left = $limit - $used;
+		$due  = array();
+		foreach ( $marks as $m ) {
+			if ( $left <= $m && $left > 0 && ! in_array( (int) $m, $l['sent'], true ) ) {
+				$due[] = (int) $m;
+			}
+		}
+		if ( $due ) {
+			// If several marks passed at once (e.g. a new limit), send just one text.
+			$l['sent'] = array_values( array_unique( array_merge( $l['sent'], $due ) ) );
+			self::text_kid( $p, 'limit_warn', $vars + array( 'minutes' => $left ) );
+		}
+		$limits[ $p['id'] ] = $l;
 	}
 
 	private static function passed_marks( array $marks, $target, $now ) {

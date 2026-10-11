@@ -70,6 +70,50 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(fa.profile_state(p, now + 900, UTC), (True, "override"))
         self.assertEqual(fa.profile_state(p, now + 86400, UTC), (True, "override"))
 
+    def test_daily_limit(self):
+        now = at(2026, 10, 12, 16, 0).timestamp()  # Monday
+        week = [180, 120, 120, 120, 120, 120, 180]  # Sun..Sat
+        p = {"enabled": True, "schedule": [], "override": None, "allowance": week}
+        self.assertEqual(fa.profile_state(p, now, UTC, 119), (False, "schedule"))
+        self.assertEqual(fa.profile_state(p, now, UTC, 120), (True, "limit"))
+        self.assertEqual(fa.profile_state(p, now, UTC, None), (False, "schedule"), "unknown usage never blocks")
+        p["override"] = {"mode": "allow", "until": now + 900}
+        self.assertEqual(fa.profile_state(p, now, UTC, 500), (False, "override"), "bonus time beats the limit")
+        p["override"] = None
+        p["allowance"] = [None] * 7
+        self.assertEqual(fa.profile_state(p, now, UTC, 999), (False, "schedule"))
+
+    def test_usage_tracker_counts_active_minutes(self):
+        state = {}
+        t = fa.UsageTracker(state)
+        cfg = {"timezone": "UTC", "usage_threshold_kb": 100, "profiles": [
+            {"id": "ava", "devices": ["00:11:22:33:44:01", "00:11:22:33:44:02"]},
+            {"id": "liam", "devices": ["00:11:22:33:44:05"]}]}
+        base = at(2026, 10, 12, 16, 0).timestamp()
+
+        def sample(sec, ava_phone, xbox, liam):
+            return t.observe([
+                {"mac": "00:11:22:33:44:01", "online": True, "bytes": ava_phone},
+                {"mac": "00:11:22:33:44:02", "online": True, "bytes": xbox},
+                {"mac": "00:11:22:33:44:05", "online": True, "bytes": liam},
+                {"mac": "aa:aa:aa:aa:aa:aa", "online": True, "bytes": 10 ** 9},
+            ], cfg, base + sec)
+
+        sample(0, 0, 0, 0)                      # baseline
+        sample(10, 50_000, 0, 10_000)           # below threshold
+        sample(20, 200_000, 0, 20_000)          # Ava's phone crosses 100 KB this minute
+        sample(30, 200_000, 500_000, 30_000)    # Xbox too: same minute, counted once
+        self.assertEqual(t.today, {"ava": 1})
+        sample(70, 400_000, 500_000, 30_000)    # next minute, phone busy again
+        sample(130, 400_000, 500_000, 40_000)   # idle-ish minute
+        self.assertEqual(t.today, {"ava": 2})
+        sample(140, 50_000, 500_000, 40_000)    # phone reconnected: counter reset, 50 KB
+        self.assertEqual(t.today, {"ava": 2})
+        # New day resets.
+        t.observe([], cfg, base + 9 * 3600)
+        self.assertEqual(t.today, {})
+        self.assertEqual(state["usage"]["day"], "2026-10-13")
+
     def test_shared_device_blocked_if_any_profile_blocked(self):
         cfg = {"timezone": "UTC", "profiles": [
             {"id": "a", "enabled": True, "devices": ["AA-BB-CC-00-00-01"], "override": {"mode": "block", "until": None}},

@@ -17,11 +17,13 @@ MAC = "a4:83:e7:12:34:56"
 class FakeAPI:
     def __init__(self):
         self.queue = []
+        self.targets = {}
         self.push_error = ""
 
     def enqueue(self, ids, command):
         cu = f"CU{len(self.queue)}"
         self.queue.append((cu, command))
+        self.targets[cu] = ids[0]
         return cu
 
     def push(self, ids):
@@ -92,6 +94,24 @@ class ManagerTests(unittest.TestCase):
         dev = self.mgr.state["devices"][UDID]
         self.assertFalse(dev["have"]["downtime"])
         self.assertNotIn("baseline", dev["have"])
+
+    def test_mac_gets_only_mac_rules(self):
+        mac_udid = "470E005B-17C1-4537-BBB3-0EBC340D432A"
+        self.mgr.handle_webhook({"topic": "mdm.Authenticate", "checkin_event": {
+            "udid": mac_udid, "raw_payload": raw({"MessageType": "Authenticate", "UDID": mac_udid, "ProductName": "Mac14,2"})}})
+        dev = self.mgr.state["devices"][mac_udid]
+        self.assertEqual(dev["platform"], "macos")
+        dev["wifi_mac"], dev["info_at"] = "aa:bb:cc:dd:ee:01", time.time()
+        self.mgr.reconcile({"aa:bb:cc:dd:ee:01": (True, True, "ava")}, {}, time.time())
+        sent = [c for cu, c in self.api.queue if self.api.targets[cu] == mac_udid]
+        kinds = [c["RequestType"] for c in sent]
+        self.assertNotIn("EnableLostMode", kinds)
+        payloads = [plistlib.loads(c["Payload"]) for c in sent if c["RequestType"] == "InstallProfile"]
+        ids = [p["PayloadIdentifier"] for p in payloads]
+        self.assertNotIn(mdm.DOWNTIME_ID, ids)
+        mac_baseline = [p for p in payloads if p["PayloadIdentifier"] == mdm.BASELINE_ID]
+        self.assertTrue(mac_baseline)
+        self.assertNotIn("allowVPNCreation", mac_baseline[0]["PayloadContent"][0])
 
     def test_profiles_are_stable(self):
         a = mdm.downtime_profile(["com.apple.MobileSMS"])

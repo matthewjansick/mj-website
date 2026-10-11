@@ -46,7 +46,7 @@ final class Family_Hub_Schedule {
 	 *   reason: disabled | paused | bonus | downtime | open
 	 *   until:  unix time the state is expected to change, or null if not scheduled to.
 	 */
-	public static function status( array $profile, $now = null ) {
+	public static function status( array $profile, $now = null, $used = false ) {
 		$now = null === $now ? time() : (int) $now;
 		if ( empty( $profile['enabled'] ) ) {
 			return array( 'blocked' => false, 'reason' => 'disabled', 'until' => null );
@@ -59,6 +59,16 @@ final class Family_Hub_Schedule {
 				'until'   => isset( $o['until'] ) ? (int) $o['until'] : null,
 			);
 		}
+		// Daily screen-time limit (usage comes from the home agent; unknown usage never blocks).
+		$used  = false === $used ? Family_Hub_Store::usage_today( $profile['id'] ) : $used;
+		$limit = self::daily_limit( $profile, self::local( $now ) );
+		if ( null !== $limit && null !== $used && $used >= $limit ) {
+			return array(
+				'blocked' => true,
+				'reason'  => 'limit',
+				'until'   => self::local( $now )->modify( '+1 day' )->setTime( 0, 0 )->getTimestamp(),
+			);
+		}
 		$rules   = isset( $profile['schedule'] ) ? (array) $profile['schedule'] : array();
 		$blocked = self::in_downtime( $rules, self::local( $now ) );
 		return array(
@@ -66,6 +76,13 @@ final class Family_Hub_Schedule {
 			'reason'  => $blocked ? 'downtime' : 'open',
 			'until'   => self::next_change( $rules, $now, $blocked ),
 		);
+	}
+
+	/** Today's allowance in minutes (allowance is 7 values, Sunday first; null = no limit). */
+	public static function daily_limit( array $profile, DateTimeInterface $local ) {
+		$a   = isset( $profile['allowance'] ) && is_array( $profile['allowance'] ) ? $profile['allowance'] : array();
+		$day = (int) $local->format( 'w' );
+		return 7 === count( $a ) && null !== $a[ $day ] ? max( 0, (int) $a[ $day ] ) : null;
 	}
 
 	/** A wind-down is a block override whose start is still in the future. */
@@ -108,7 +125,7 @@ final class Family_Hub_Schedule {
 		return null;
 	}
 
-	private static function local( $ts ) {
+	public static function local( $ts ) {
 		return ( new DateTimeImmutable( '@' . $ts ) )->setTimezone( wp_timezone() );
 	}
 }

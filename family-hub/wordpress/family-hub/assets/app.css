@@ -252,3 +252,24 @@ textarea { resize: vertical; font: inherit; }
 .mdm-list { list-style: none; padding: 0; margin: 0 0 10px; }
 .mdm-list li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
 .mdm-list small { color: var(--ink-3); }
+
+.usage { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.usage-top { display: flex; justify-content: space-between; gap: 8px; }
+.usage-top strong { color: var(--ink); }
+.usage small { color: var(--ink-3); }
+.meter { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.meter span { display: block; height: 100%; background: var(--kid); border-radius: inherit; }
+.meter.near span { background: var(--wind-bg); }
+.meter.full span { background: var(--danger-bg); }
+
+.setup-bar { width: 100%; display: flex; flex-direction: column; gap: 8px; text-align: left; border: 1px dashed var(--rule); background: var(--surface); border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; cursor: pointer; font-size: 14px; color: var(--ink-2); --kid: var(--primary); }
+.setup-bar strong { color: var(--ink); }
+.checklist { list-style: none; padding: 0; margin: 0; }
+.checklist li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.checklist li div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.checklist small { color: var(--ink-2); font-size: 13px; }
+.checklist .where { align-self: flex-start; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--ink-3); text-transform: uppercase; letter-spacing: .04em; }
+.checklist .mark { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--rule); display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+.checklist .st-done .mark { background: var(--good); border-color: var(--good); color: #fff; }
+.checklist .st-done strong { color: var(--ink-3); font-weight: 500; }
+.checklist .st-warn .mark { border-color: var(--warn); color: var(--warn); }

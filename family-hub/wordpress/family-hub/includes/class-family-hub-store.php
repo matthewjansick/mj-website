@@ -126,6 +126,8 @@ final class Family_Hub_Store {
 				// Apple devices (MDM): apps that still open during downtime.
 				'downtime_apps'    => array( 'com.apple.mobilephone', 'com.apple.MobileSMS', 'com.apple.Maps', 'com.apple.mobiletimer', 'com.apple.findmy', 'com.apple.MobileAddressBook' ),
 				'lock_message'     => 'This device is locked by Mom & Dad.',
+				// A minute counts as screen time when a device moves more than this (KB).
+				'usage_threshold_kb' => 250,
 			)
 		);
 	}
@@ -152,6 +154,56 @@ final class Family_Hub_Store {
 
 	public static function save_clients( array $clients ) {
 		update_option( self::OPT_CLIENTS, $clients, false );
+	}
+
+	/**
+	 * Screen time reported by the agent: { day, minutes: {profile_id: n}, history: {day: {...}} }.
+	 */
+	public static function usage() {
+		$u = get_option( 'family_hub_usage', array() );
+		return is_array( $u ) ? $u : array();
+	}
+
+	public static function save_usage_report( $day, array $minutes ) {
+		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $day ) ) {
+			return;
+		}
+		$u       = self::usage();
+		$history = isset( $u['history'] ) && is_array( $u['history'] ) ? $u['history'] : array();
+		if ( ! empty( $u['day'] ) && $u['day'] !== $day && ! empty( $u['minutes'] ) ) {
+			$history[ $u['day'] ] = $u['minutes'];
+		}
+		$clean = array();
+		foreach ( $minutes as $pid => $n ) {
+			$pid = sanitize_key( $pid );
+			if ( $pid ) {
+				$clean[ $pid ] = min( 1440, absint( $n ) );
+			}
+		}
+		$history[ $day ] = $clean;
+		krsort( $history );
+		update_option(
+			'family_hub_usage',
+			array(
+				'day'     => $day,
+				'minutes' => $clean,
+				'updated' => time(),
+				'history' => array_slice( $history, 0, 30, true ),
+			),
+			false
+		);
+	}
+
+	/** Minutes used today, 0 on a new day, or null if the agent has never reported usage. */
+	public static function usage_today( $profile_id ) {
+		$u = self::usage();
+		if ( empty( $u['day'] ) ) {
+			return null;
+		}
+		if ( wp_date( 'Y-m-d' ) !== $u['day'] ) {
+			return 0;
+		}
+		return isset( $u['minutes'][ $profile_id ] ) ? (int) $u['minutes'][ $profile_id ] : 0;
 	}
 
 	public static function mdm() {

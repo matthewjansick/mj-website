@@ -111,6 +111,9 @@ final class Family_Hub_REST {
 			if ( isset( $body['clients'] ) && is_array( $body['clients'] ) ) {
 				Family_Hub_Store::save_clients( self::clean_clients( $body['clients'] ) );
 			}
+			if ( isset( $body['usage']['day'], $body['usage']['minutes'] ) && is_array( $body['usage']['minutes'] ) ) {
+				Family_Hub_Store::save_usage_report( (string) $body['usage']['day'], $body['usage']['minutes'] );
+			}
 			if ( isset( $body['mdm'] ) && is_array( $body['mdm'] ) ) {
 				Family_Hub_Store::save_mdm( self::clean_mdm( $body['mdm'] ) );
 			}
@@ -230,6 +233,7 @@ final class Family_Hub_REST {
 				'schedule' => $p['schedule'],
 				'override' => isset( $p['override'] ) ? $p['override'] : null,
 				'lock'     => ! empty( $p['lock'] ),
+				'allowance' => isset( $p['allowance'] ) ? $p['allowance'] : null,
 			);
 		}
 		$parents = array_values( array_filter( wp_list_pluck( $settings['parents'], 'phone' ) ) );
@@ -237,6 +241,7 @@ final class Family_Hub_REST {
 			'timezone'    => wp_timezone_string(),
 			'enforcement' => $settings['enforcement'],
 			'profiles'    => $profiles,
+			'usage_threshold_kb' => (int) $settings['usage_threshold_kb'],
 			'mdm'         => array(
 				'downtime_apps' => array_values( $settings['downtime_apps'] ),
 				'lock_message'  => $settings['lock_message'],
@@ -256,6 +261,7 @@ final class Family_Hub_REST {
 		$applied  = isset( $agent['applied'] ) ? $agent['applied'] : array();
 		$assigned = array();
 		$notify   = Family_Hub_Notify::state();
+		$usage    = Family_Hub_Store::usage();
 		$mdm      = Family_Hub_Store::mdm();
 		$mdm_by_mac = array();
 		foreach ( isset( $mdm['devices'] ) ? $mdm['devices'] : array() as $md ) {
@@ -298,6 +304,20 @@ final class Family_Hub_REST {
 			$p['cutoff']  = $next && $next['at'] - $now <= DAY_IN_SECONDS ? $next : null;
 			$p['extended'] = ! empty( $notify[ $p['id'] ]['extended'] ) && ! empty( $notify[ $p['id'] ]['target'] );
 			$p['pending'] = $pending && ! empty( $devices );
+			$history      = isset( $usage['history'] ) ? $usage['history'] : array();
+			$week         = array();
+			for ( $i = 6; $i >= 0; $i-- ) {
+				$day    = wp_date( 'Y-m-d', $now - $i * DAY_IN_SECONDS );
+				$week[] = array(
+					'day'     => $day,
+					'minutes' => isset( $history[ $day ][ $p['id'] ] ) ? (int) $history[ $day ][ $p['id'] ] : null,
+				);
+			}
+			$p['usage'] = array(
+				'today' => Family_Hub_Store::usage_today( $p['id'] ),
+				'limit' => Family_Hub_Schedule::daily_limit( $p, Family_Hub_Schedule::local( $now ) ),
+				'week'  => $week,
+			);
 			$profiles[]   = $p;
 		}
 
@@ -387,6 +407,17 @@ final class Family_Hub_REST {
 			return new WP_Error( 'invalid', 'That phone number is not valid.', array( 'status' => 400 ) );
 		}
 
+		$allowance = null;
+		if ( isset( $in['allowance'] ) && is_array( $in['allowance'] ) && 7 === count( $in['allowance'] ) ) {
+			$allowance = array();
+			foreach ( array_values( $in['allowance'] ) as $minutes ) {
+				$allowance[] = null === $minutes || '' === $minutes ? null : min( 1440, absint( $minutes ) );
+			}
+			if ( ! array_filter( $allowance, 'is_int' ) ) {
+				$allowance = null; // no limit on any day
+			}
+		}
+
 		$color   = isset( $in['color'] ) && in_array( $in['color'], Family_Hub_Store::COLORS, true ) ? $in['color'] : 'teal';
 		$profile = array(
 			'id'       => $existing ? $existing['id'] : Family_Hub_Store::new_profile_id(),
@@ -394,6 +425,7 @@ final class Family_Hub_REST {
 			'color'    => $color,
 			'enabled'  => ! isset( $in['enabled'] ) || (bool) $in['enabled'],
 			'phone'    => $phone,
+			'allowance' => $allowance,
 			'devices'  => array_values( $devices ),
 			'schedule' => $schedule,
 			'override' => $existing && isset( $existing['override'] ) ? $existing['override'] : null,
@@ -606,6 +638,9 @@ final class Family_Hub_REST {
 				}
 			}
 			$settings['downtime_apps'] = array_values( array_unique( $apps ) );
+		}
+		if ( isset( $in['usage_threshold_kb'] ) ) {
+			$settings['usage_threshold_kb'] = min( 10000, max( 10, absint( $in['usage_threshold_kb'] ) ) );
 		}
 		if ( isset( $in['lock_message'] ) ) {
 			$settings['lock_message'] = substr( sanitize_text_field( (string) $in['lock_message'] ), 0, 160 );

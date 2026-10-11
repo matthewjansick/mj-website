@@ -32,6 +32,7 @@ starts and ends).
 | Ecosystem | Status |
 |---|---|
 | **UniFi (all devices on home Wi-Fi/LAN)** | ✅ Wind-down, pause, schedules, bonus time, per kid. |
+| **Screen time & daily limits** | ✅ Estimated from each kid's internet activity at home; per-kid limits for school days and weekends, with texts as time runs low and an automatic cutoff until midnight. |
 | **Text alerts (Brevo SMS)** | ✅ Wind-down warnings to kids, "+5 min" link, confirmations to parents. |
 | **Xbox** | ✅ Through UniFi: an Xbox without internet can't play online or launch online-only games. Microsoft has no public API for Family Settings, so in-console limits stay in the Xbox Family app. |
 | **iPhones & iPads (MDM)** | ✅ Supervised devices: at cutoff only the apps you allow can open, **on cellular too**. Always-on rules (no VPNs, no erasing, no profile installs). **Lock completely** (Lost Mode). Needs a one-time wipe, supervise and restore per device. |
@@ -291,6 +292,26 @@ The texts come from the website, timed by the agent's check-ins every 10 seconds
 timer only runs when someone visits the site). If the Mac mini is offline, the website's timer is the
 fallback, so texts may arrive late.
 
+### Screen time and daily limits
+
+- **How it's counted:** a minute counts as screen time when any of the kid's devices moves more than 250 KB
+  in that minute on the home network (about the level of real use, not idle background syncing). Change it
+  in **Settings → Count a minute as screen time when…**. It's an estimate: phones on cellular aren't seen,
+  and a console downloading an update counts. The card shows today's total and a 7-day average.
+- **Limits:** edit a kid → **Daily screen-time limit**, separately for Mon–Fri and Sat & Sun. When it runs
+  out the kid is offline until midnight (*"Daily limit reached"*). **Give bonus time** works as usual.
+- **Texts:** *"Mom & Dad: 14 min of screen time left today."* at the warning marks (once each per day),
+  then *"That is all your screen time for today. See you tomorrow!"* These follow usage, not the clock,
+  and use the same **Also warn before scheduled downtime…** switch.
+- The agent counts and enforces limits itself, so a limit still applies if the website is down.
+
+### Macs
+
+A kid's Mac enrolls with the same profile as an iPhone (Apple Configurator, or double-click the
+`.mobileconfig` on the Mac). It gets the rules that apply to Macs (no erasing; the home Wi-Fi profile) and
+shows as **managed Mac**. App Downtime and Lost Mode are iPhone/iPad features; at home a Mac is cut off by
+the router like everything else.
+
 ### Everything else
 
 - **States.** A kid is *Internet on*, *Downtime* (schedule), *Paused* (you), *Bonus time* (you), or
@@ -340,14 +361,21 @@ GOBIN=/tmp/fh go install github.com/micromdm/scep/v2/cmd/scepserver@v2.3.0
 GOBIN=/tmp/fh go install github.com/micromdm/scep/v2/cmd/scepclient@v2.3.0
 FAMILYHUB_MDM_BIN=/tmp/fh python3 -m unittest discover -s family-hub/agent/tests
 php -l family-hub/wordpress/family-hub/includes/*.php
-wp eval-file family-hub/wordpress/tests/notify-test.php    # wind-down texts, on a throwaway dev site only
+wp eval-file family-hub/wordpress/tests/notify-test.php    # wind-down texts     } on a throwaway
+wp eval-file family-hub/wordpress/tests/limit-test.php     # screen-time limits  } dev site only
+wp eval-file family-hub/wordpress/tests/mdm-test.php       # Apple devices       }
 ```
+
+GitHub runs all of this on every change to `family-hub/` (`.github/workflows/family-hub.yml`): the agent
+on Python 3.9 and 3.12 including the real-NanoMDM tests, and the plugin on PHP 7.4 and 8.3 inside a fresh
+WordPress, plus the wind-down, limit and Apple-device suites. Each run also produces an installable
+`family-hub-plugin` zip under the run's **Artifacts**.
 
 The agent uses only the Python standard library and runs on the Python 3.9 that ships with macOS.
 The plugin needs WordPress 6.0+ and PHP 7.4+, and has no build step.
 
 ## Roadmap
 
-- **Next:** kids' Macs (same management server; macOS supports most of the same controls).
-- **Later:** time allowances (e.g. 2 h of Xbox per day, measured from network activity); possibly a
-  companion iOS app for true Screen Time control.
+- **Next:** app-level Downtime for Macs; "Lock" for Macs (macOS Device Lock with a PIN you hold).
+- **Later:** per-device limits (e.g. Xbox only), weekly reports texted to parents, possibly a companion iOS
+  app for true Screen Time control.
