@@ -128,6 +128,8 @@ final class Family_Hub_Store {
 				'lock_message'     => 'This device is locked by Mom & Dad.',
 				// A minute counts as screen time when a device moves more than this (KB).
 				'usage_threshold_kb' => 250,
+				// Sunday-evening screen-time summary texted to parents.
+				'weekly_report'    => true,
 			)
 		);
 	}

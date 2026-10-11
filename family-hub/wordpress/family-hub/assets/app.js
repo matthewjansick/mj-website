@@ -244,7 +244,8 @@
   function mdmTags(m) {
     if (!m) return '';
     if (m.platform === 'macos') {
-      return '<span class="tag managed" title="Managed Mac · macOS ' + h(m.os) + '. Cut off by the router at home; app Downtime and Lost Mode are iPhone/iPad only.">' + icon('apple') + 'managed Mac</span>';
+      return '<span class="tag managed" title="Managed Mac · macOS ' + h(m.os) + '. Cut off by the router at home; app Downtime is iPhone/iPad only.">' + icon('apple') + 'managed Mac</span>' +
+        (m.locked ? '<span class="tag blocked" title="Type this PIN on the Mac to unlock it">' + icon('lock') + 'locked · PIN ' + h(m.unlock_pin) + '</span>' : '');
     }
     var out = '<span class="tag managed" title="Managed Apple device · iOS ' + h(m.os) + (m.battery != null ? ' · battery ' + h(m.battery) + '%' : '') + '">' + icon('apple') + 'managed</span>';
     if (m.supervised === false) out += '<span class="tag warn" title="Not supervised: Downtime and Lost Mode need supervision">not supervised</span>';
@@ -382,7 +383,7 @@
 
     html += usageLine(p);
 
-    var managed = p.devices.filter(function (d) { return d.mdm && d.mdm.platform !== 'macos'; });
+    var managed = p.devices.filter(function (d) { return d.mdm; });
     if (managed.length) {
       html += '<div class="lockrow">' + (p.lock
         ? '<span class="tag blocked">' + icon('lock') + 'Locked (Lost Mode)</span><button class="btn ghost small" data-act="unlock" data-id="' + h(p.id) + '">Unlock devices</button>'
@@ -672,6 +673,7 @@
         return '<option value="' + n + '"' + (+s.winddown_default === n ? ' selected' : '') + '>' + n + ' minutes</option>';
       }).join('') + '</select></label></div>' +
       '<label class="switch"><input type="checkbox" name="winddown_bedtime"' + (s.winddown_bedtime ? ' checked' : '') + '><span>Also warn before scheduled downtime and when bonus time ends</span></label>' +
+      '<label class="switch"><input type="checkbox" name="weekly_report"' + (s.weekly_report ? ' checked' : '') + '><span>Text parents a screen-time summary on Sunday evenings</span> <button type="button" class="link" data-weekly>Preview</button></label>' +
       '<details class="templates"><summary>Message wording</summary>' + Object.keys(sms.defaults).map(function (k) {
         var val = (s.templates && s.templates[k]) || sms.defaults[k];
         return '<label class="field"><span>' + h(TEMPLATE_LABELS[k] || k) + '</span><textarea name="tpl_' + h(k) + '" rows="2">' + h(val) + '</textarea></label>';
@@ -726,6 +728,7 @@
           sms_prefix: form.sms_prefix.value.trim(),
           winddown_default: +form.winddown_default.value,
           winddown_bedtime: form.winddown_bedtime.checked,
+          weekly_report: form.weekly_report.checked,
           warn_minutes: form.warn_minutes.value.split(/[^0-9]+/).filter(Boolean).map(Number),
           parents: parents.map(function (_, i) { return { name: form['pname' + i].value.trim(), phone: form['pphone' + i].value.trim() }; }),
           templates: {}
@@ -742,6 +745,10 @@
         var list = [].slice.call(mform.querySelectorAll('input[name=app]:checked')).map(function (i) { return i.value; });
         mform.other_apps.value.split(',').map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (x) { list.push(x); });
         mutate('POST', 'settings', { downtime_apps: list, lock_message: mform.lock_message.value.trim() }, 'Apple device settings saved');
+      });
+      dlg.querySelector('[data-weekly]').addEventListener('click', function (e) {
+        e.preventDefault();
+        api('GET', 'report/weekly').then(function (res) { window.alert(res.text); }).catch(function (err) { toast(err.message, true); });
       });
       dlg.querySelector('[data-test-sms]').addEventListener('click', function () {
         api('POST', 'sms/test', { phone: form.test_phone.value }).then(function () {
@@ -901,7 +908,7 @@
         });
         break;
       case 'lock':
-        if (!window.confirm('Lock ' + p.name + '’s Apple devices completely?\n\nThey show your message and phone number and can’t be used at all until you tap Unlock. (Apple calls this Lost Mode.)')) break;
+        if (!window.confirm('Lock ' + p.name + '’s Apple devices completely?\n\niPhones/iPads show your message and phone number and can’t be used until you tap Unlock (Lost Mode).\n\nMacs lock until someone types the 6-digit PIN shown on the dashboard at the Mac itself. Unlocking a Mac can’t be done remotely.')) break;
         mutate('POST', 'profiles/' + id + '/lock', { locked: true }, p.name + '’s devices are locking');
         break;
       case 'unlock':

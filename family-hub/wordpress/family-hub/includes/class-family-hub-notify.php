@@ -22,6 +22,8 @@ final class Family_Hub_Notify {
 	const OPT_LOCK    = 'family_hub_notify_lock';
 	const OPT_API_KEY = 'family_hub_brevo_api_key';
 	const OPT_LIMITS  = 'family_hub_limit_state';
+	const OPT_WEEKLY  = 'family_hub_weekly_sent';
+	const WEEKLY_HOUR = 19; // Sunday 7 PM, site time
 	const CRON_HOOK   = 'family_hub_tick';
 	const EXTEND_MIN  = 5;
 	const CONFIRM_SEC = 180; // Warn parents if the agent hasn't confirmed a cutoff by then.
@@ -133,6 +135,7 @@ final class Family_Hub_Notify {
 		}
 		try {
 			self::run( $now );
+			self::maybe_weekly( $now );
 		} finally {
 			delete_option( self::OPT_LOCK );
 		}
@@ -302,6 +305,82 @@ final class Family_Hub_Notify {
 			self::text_kid( $p, 'limit_warn', $vars + array( 'minutes' => $left ) );
 		}
 		$limits[ $p['id'] ] = $l;
+	}
+
+	// ------------------------------------------------------------------ weekly summary
+
+	/** Text parents the week's summary once, on Sunday evening. */
+	private static function maybe_weekly( $now ) {
+		$settings = Family_Hub_Store::settings();
+		if ( empty( $settings['sms_enabled'] ) || empty( $settings['weekly_report'] ) ) {
+			return;
+		}
+		$local  = Family_Hub_Schedule::local( $now );
+		$sunday = $local->modify( '-' . (int) $local->format( 'w' ) . ' days' )->setTime( self::WEEKLY_HOUR, 0 );
+		if ( $sunday->getTimestamp() > $now ) {
+			$sunday = $sunday->modify( '-7 days' );
+		}
+		$due = $sunday->getTimestamp();
+		// Only within a few hours of the slot, so a first install doesn't send last week's.
+		if ( $now - $due > 6 * HOUR_IN_SECONDS || (int) get_option( self::OPT_WEEKLY, 0 ) >= $due ) {
+			return;
+		}
+		update_option( self::OPT_WEEKLY, $due, false );
+		$text = self::weekly_summary( $now );
+		if ( $text ) {
+			self::send_to_parents( $text );
+		}
+	}
+
+	/**
+	 * "Family Hub week: Ava 9h 40m (avg 1h 23m/day, limit reached 2 days). Liam 6h 5m (avg 52m/day)."
+	 * Null when there's no usage data yet.
+	 */
+	public static function weekly_summary( $now ) {
+		$usage   = Family_Hub_Store::usage();
+		$history = isset( $usage['history'] ) && is_array( $usage['history'] ) ? $usage['history'] : array();
+		$parts   = array();
+		foreach ( Family_Hub_Store::profiles() as $p ) {
+			$total = 0;
+			$days  = 0;
+			$hit   = 0;
+			for ( $i = 0; $i < 7; $i++ ) {
+				$ts  = $now - $i * DAY_IN_SECONDS;
+				$day = wp_date( 'Y-m-d', $ts );
+				if ( ! isset( $history[ $day ][ $p['id'] ] ) ) {
+					continue;
+				}
+				$m      = (int) $history[ $day ][ $p['id'] ];
+				$total += $m;
+				++$days;
+				$limit = Family_Hub_Schedule::daily_limit( $p, Family_Hub_Schedule::local( $ts ) );
+				if ( null !== $limit && $m >= $limit ) {
+					++$hit;
+				}
+			}
+			if ( ! $days ) {
+				continue;
+			}
+			$extra   = 'avg ' . self::duration( (int) round( $total / $days ) ) . '/day';
+			$extra  .= $hit ? sprintf( ', limit reached %d day%s', $hit, 1 === $hit ? '' : 's' ) : '';
+			$parts[] = sprintf( '%s %s (%s)', $p['name'], self::duration( $total ), $extra );
+		}
+		return $parts ? 'Family Hub week: ' . implode( '. ', $parts ) . '.' : null;
+	}
+
+	private static function duration( $minutes ) {
+		$h = intdiv( $minutes, 60 );
+		$m = $minutes % 60;
+		return $h ? $h . 'h' . ( $m ? ' ' . $m . 'm' : '' ) : $m . 'm';
+	}
+
+	private static function send_to_parents( $text ) {
+		$settings = Family_Hub_Store::settings();
+		foreach ( $settings['parents'] as $parent ) {
+			if ( ! empty( $parent['phone'] ) ) {
+				self::send( $parent['phone'], $text, $parent['name'] ? $parent['name'] : 'parent', '' );
+			}
+		}
 	}
 
 	private static function passed_marks( array $marks, $target, $now ) {

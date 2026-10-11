@@ -71,4 +71,30 @@ report( array( $ava => 5 ) );
 $st   = req( 'GET', 'state' );
 $week = $st['profiles'][0]['usage']['week'];
 check( 120 === $week[5]['minutes'] && 5 === $week[6]['minutes'], 'history keeps yesterday' );
+// Weekly summary: Sunday 7 PM, once, only near the slot. Seed a known week before the last Sunday.
+delete_option( 'family_hub_weekly_sent' );
+$local  = Family_Hub_Schedule::local( time() );
+$sunday = $local->modify( '-' . (int) $local->format( 'w' ) . ' days' )->setTime( 19, 5 );
+if ( $sunday->getTimestamp() > time() ) { $sunday = $sunday->modify( '-7 days' ); }
+$u = Family_Hub_Store::usage();
+for ( $i = 0; $i < 7; $i++ ) {
+	$u['history'][ wp_date( 'Y-m-d', $sunday->getTimestamp() - $i * DAY_IN_SECONDS ) ] = array( $ava => 3 === $i ? 200 : 60 );
+}
+update_option( 'family_hub_usage', $u, false );
+$sum = Family_Hub_Notify::weekly_summary( $sunday->getTimestamp() );
+check( 'Family Hub week: Ava 9h 20m (avg 1h 20m/day, limit reached 1 day).' === $sum, 'weekly summary text' );
+echo '        "' . $sum . "\"\n";
+texts();
+Family_Hub_Notify::tick( $sunday->getTimestamp() - 600 );
+check( ! array_filter( texts(), function ( $t ) { return 0 === strpos( $t, 'Family Hub week' ); } ), 'not before Sunday 7 PM' );
+Family_Hub_Notify::tick( $sunday->getTimestamp() );
+check( 1 === count( array_filter( texts(), function ( $t ) { return 0 === strpos( $t, 'Family Hub week' ); } ) ), 'sent at Sunday 7 PM (one parent)' );
+Family_Hub_Notify::tick( $sunday->getTimestamp() + 600 );
+check( ! array_filter( texts(), function ( $t ) { return 0 === strpos( $t, 'Family Hub week' ); } ), 'only once' );
+delete_option( 'family_hub_weekly_sent' );
+Family_Hub_Notify::tick( $sunday->getTimestamp() + 8 * HOUR_IN_SECONDS );
+check( ! array_filter( texts(), function ( $t ) { return 0 === strpos( $t, 'Family Hub week' ); } ), 'not sent late (fresh install on Monday)' );
+$prev = req( 'GET', 'report/weekly' );
+check( $prev['text'] === Family_Hub_Notify::weekly_summary( time() ), 'dashboard preview matches' );
+
 echo $GLOBALS['fails'] ? "\n" . $GLOBALS['fails'] . " FAILED\n" : "\nALL PASSED\n";

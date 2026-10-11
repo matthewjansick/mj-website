@@ -57,6 +57,15 @@ check( true === $cfg['config']['profiles'][0]['lock'], 'agent told to lock' );
 req( 'PUT', "profiles/$ava", array( 'name' => 'Ava B', 'devices' => array( array( 'mac' => 'a4:83:e7:12:34:56' ) ) ) );
 check( ! empty( Family_Hub_Store::profile( $ava )['lock'] ), 'editing the profile keeps the lock' );
 
+// Mac lock PIN reaches the dashboard; junk PINs don't.
+req( 'POST', 'agent/sync', array( 'events' => array(), 'mdm' => array( 'ok' => true, 'devices' => array(
+	array( 'udid' => '470E005B-17C1-4537-BBB3-0EBC340D432A', 'name' => 'Ava Mac', 'platform' => 'macos', 'wifi_mac' => 'a4:83:e7:12:34:56', 'enrolled' => true, 'locked' => true, 'unlock_pin' => '482913' ),
+	array( 'udid' => '470E005B-17C1-4537-BBB3-0EBC340D4000', 'name' => 'X', 'platform' => 'evil', 'enrolled' => true, 'unlock_pin' => '<b>' ),
+) ) ), array( 'x_family_hub_token' => $token ) );
+$mdm = Family_Hub_Store::mdm();
+check( 'macos' === $mdm['devices'][0]['platform'] && '482913' === $mdm['devices'][0]['unlock_pin'], 'Mac PIN passed through' );
+check( 'ios' === $mdm['devices'][1]['platform'] && '' === $mdm['devices'][1]['unlock_pin'], 'bad platform/PIN rejected' );
+
 // Settings
 $st = req( 'POST', 'settings', array( 'downtime_apps' => array( 'com.apple.MobileSMS', 'not valid!', 'com.duolingo.DuolingoMobile' ), 'lock_message' => 'Phones away <b>now</b>' ) );
 check( array( 'com.apple.MobileSMS', 'com.duolingo.DuolingoMobile' ) === $st['settings']['downtime_apps'], 'bundle IDs validated' );

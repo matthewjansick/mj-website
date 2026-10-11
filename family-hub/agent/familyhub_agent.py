@@ -40,7 +40,7 @@ try:
 except ImportError:  # pragma: no cover - Python < 3.9
     ZoneInfo = None  # type: ignore
 
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 LOG = logging.getLogger("familyhub")
 MAC_RE = re.compile(r"^([0-9a-f]{2}:){5}[0-9a-f]{2}$")
 CLIENT_REPORT_INTERVAL = 60  # seconds between full client-list uploads

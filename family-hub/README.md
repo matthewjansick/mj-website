@@ -304,13 +304,21 @@ fallback, so texts may arrive late.
   then *"That is all your screen time for today. See you tomorrow!"* These follow usage, not the clock,
   and use the same **Also warn before scheduled downtime…** switch.
 - The agent counts and enforces limits itself, so a limit still applies if the website is down.
+- **Weekly summary:** every Sunday at 7 PM both parents get one text, e.g. *"Family Hub week: Ava 9h 20m
+  (avg 1h 20m/day, limit reached 1 day). Liam 6h 5m (avg 52m/day)."* Switch it off or **Preview** it in
+  **Settings → Text alerts**.
 
 ### Macs
 
 A kid's Mac enrolls with the same profile as an iPhone (Apple Configurator, or double-click the
 `.mobileconfig` on the Mac). It gets the rules that apply to Macs (no erasing; the home Wi-Fi profile) and
-shows as **managed Mac**. App Downtime and Lost Mode are iPhone/iPad features; at home a Mac is cut off by
-the router like everything else.
+shows as **managed Mac**. App Downtime is an iPhone/iPad feature; at home a Mac is cut off by the router
+like everything else.
+
+**Lock completely** works on Macs too, differently: Macs have no Lost Mode, so the Mac is locked with a
+6-digit PIN that appears on the kid's card (*"locked · PIN 482913"*). It stays locked until someone types
+that PIN **at the Mac**. Unlocking a Mac can't be done remotely, and the PIN disappears from the
+dashboard once the Mac checks in again.
 
 ### Everything else
 
@@ -376,6 +384,13 @@ The plugin needs WordPress 6.0+ and PHP 7.4+, and has no build step.
 
 ## Roadmap
 
-- **Next:** app-level Downtime for Macs; "Lock" for Macs (macOS Device Lock with a PIN you hold).
-- **Later:** per-device limits (e.g. Xbox only), weekly reports texted to parents, possibly a companion iOS
-  app for true Screen Time control.
+- **Next:** app-level Downtime for Macs.
+- **Bookmarked: message safety monitor.** A separate macOS user per kid on the Mac mini, signed into the
+  kid's Messages (Messages in iCloud, plus Text Message Forwarding for SMS). A monitor reads new messages
+  from `~/Library/Messages/chat.db` (needs Full Disk Access) every few minutes and has an AI model check
+  them against parent-defined concerns (bullying, self-harm, grooming, sexual content, drugs, meetups with
+  strangers). Parents get alerts with a short summary and the flagged excerpt, never full transcripts;
+  conversations stay on the Mac mini. Covers iMessage/SMS only (not Snapchat, Discord, etc.).
+  Open decisions: cloud model (more accurate) vs local model (nothing leaves the house) vs local-first with
+  cloud double-check; alerts only vs alerts plus a weekly summary.
+- **Later:** per-device limits (e.g. Xbox only), possibly a companion iOS app for true Screen Time control.

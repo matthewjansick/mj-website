@@ -29,6 +29,7 @@ import http.client
 import json
 import logging
 import plistlib
+import secrets
 import threading
 import time
 import urllib.parse
@@ -373,12 +374,22 @@ class MDMManager:
             return ""  # user-channel messages: not used
         return ev.get("udid") or payload.get("UDID") or ids.get("id") or ""
 
+    @staticmethod
+    def _mac_heard_from(dev: dict) -> None:
+        """A locked Mac can't talk to us until someone types the PIN at the Mac,
+        so hearing from it again means it was unlocked."""
+        if dev.get("platform") == "macos" and dev["have"].get("lost") and \
+                time.time() - dev.get("mac_locked_at", 0) > 60:
+            dev["have"]["lost"] = False
+            dev.pop("unlock_pin", None)
+
     def _on_checkin(self, topic: str, ev: dict) -> None:
         payload = self._payload(ev)
         udid = self._udid(ev, payload)
         if not udid:
             return
         dev = self._device(udid)
+        self._mac_heard_from(dev)
         dev["last_seen"] = int(time.time())
         if topic == "mdm.Authenticate":
             # Fresh enrollment: a newly set-up device has none of our profiles yet.
@@ -403,6 +414,7 @@ class MDMManager:
         if not udid:
             return
         dev = self._device(udid)
+        self._mac_heard_from(dev)
         dev["last_seen"] = int(time.time())
         status = ev.get("status") or payload.get("Status", "")
         cu = (ev.get("command_uuid") or payload.get("CommandUUID") or "").upper()
@@ -416,6 +428,11 @@ class MDMManager:
             if aspect == "info":
                 self._apply_info(dev, payload.get("QueryResponses") or {})
                 dev["info_at"] = int(time.time())
+            elif aspect == "maclock":
+                dev["have"]["lost"] = True
+                dev["mac_locked_at"] = int(time.time())
+                self._event("mdm_locked", udid, "Mac locked (unlock with the PIN on the dashboard)",
+                            cmd.get("profile_id", ""))
             else:
                 dev["have"][aspect] = value
                 dev.pop("error", None)
@@ -502,6 +519,8 @@ class MDMManager:
                     "downtime": want_downtime if blocked and not is_mac else False,
                     "lost": want_lost if locked and not is_mac else False,
                 }
+                if is_mac:
+                    self._mac_lock(dev, locked, lock_msg, pid, now)
                 for aspect in ASPECTS:
                     want = targets[aspect]
                     pending = dev["pending"].get(aspect)
@@ -537,6 +556,21 @@ class MDMManager:
                         else:
                             self._send(dev, aspect, "DisableLostMode", {}, False, pid)
             self.save()
+
+    def _mac_lock(self, dev: dict, locked: bool, message: str, pid: str, now: float) -> None:
+        """Macs have no Lost Mode. DeviceLock locks the Mac until its PIN is typed
+        at the Mac; it can't be undone remotely. Sent once per lock request, so a
+        Mac unlocked with the PIN isn't locked again while the button stays on."""
+        if not locked:
+            dev.pop("mac_lock_sent", None)
+            return
+        if dev.get("mac_lock_sent") or "maclock" in dev["pending"] or now < dev["retry_at"].get("maclock", 0):
+            return
+        pin = dev.get("unlock_pin") or "".join(secrets.choice("0123456789") for _ in range(6))
+        dev["unlock_pin"] = pin
+        self._send(dev, "maclock", "DeviceLock", {"PIN": pin, "Message": message}, True, pid)
+        if "maclock" in dev["pending"]:
+            dev["mac_lock_sent"] = True
 
     def _expire_commands(self, now: float) -> None:
         # Forget commands for devices that never answered in a week (phone lost, sold...).
@@ -576,8 +610,9 @@ class MDMManager:
                     "battery": d.get("battery"),
                     "downtime": bool(d["have"].get("downtime")),
                     "locked": bool(d["have"].get("lost")),
+                    "unlock_pin": d.get("unlock_pin", "") if d.get("platform") == "macos" else "",
                     "baseline": bool(d["have"].get("baseline")),
-                    "pending": sorted(k for k in d["pending"] if k != "info"),
+                    "pending": sorted(k for k in d["pending"] if k not in ("info", "maclock")),
                     "error": d.get("error", ""),
                 })
             return {

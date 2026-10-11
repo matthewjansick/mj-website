@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Family Hub
  * Description:       Self-hosted parental controls: wind-downs with text alerts, schedules, screen-time limits and Apple device management for each kid, enforced at home by a small agent on your UniFi network. Dashboard lives at /family.
- * Version:           0.4.0
+ * Version:           0.5.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Matthew Jansick
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'FAMILY_HUB_VERSION', '0.4.0' );
+define( 'FAMILY_HUB_VERSION', '0.5.0' );
 define( 'FAMILY_HUB_DB_VERSION', 2 );
 define( 'FAMILY_HUB_FILE', __FILE__ );
 define( 'FAMILY_HUB_DIR', plugin_dir_path( __FILE__ ) );

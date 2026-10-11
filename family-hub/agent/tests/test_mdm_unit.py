@@ -113,6 +113,41 @@ class ManagerTests(unittest.TestCase):
         self.assertTrue(mac_baseline)
         self.assertNotIn("allowVPNCreation", mac_baseline[0]["PayloadContent"][0])
 
+    def test_mac_lock_is_one_shot_with_pin(self):
+        mac_udid = "470E005B-17C1-4537-BBB3-0EBC340D432A"
+        mac = "aa:bb:cc:dd:ee:02"
+        self.mgr.handle_webhook({"topic": "mdm.Authenticate", "checkin_event": {
+            "udid": mac_udid, "raw_payload": raw({"MessageType": "Authenticate", "UDID": mac_udid, "ProductName": "MacBookAir10,1"})}})
+        dev = self.mgr.state["devices"][mac_udid]
+        dev["wifi_mac"], dev["info_at"] = mac, time.time()
+        self.mgr.reconcile({mac: (False, True, "ava")}, {"lock_message": "Bedtime"}, time.time())
+        locks = [(cu, c) for cu, c in self.api.queue if c["RequestType"] == "DeviceLock"]
+        self.assertEqual(len(locks), 1)
+        cu, cmd = locks[0]
+        self.assertRegex(cmd["PIN"], r"^\d{6}$")
+        self.assertEqual(cmd["Message"], "Bedtime")
+        self.mgr.handle_webhook({"topic": "mdm.Connect", "acknowledge_event": {
+            "udid": mac_udid, "status": "Acknowledged", "command_uuid": cu,
+            "raw_payload": raw({"UDID": mac_udid, "CommandUUID": cu, "Status": "Acknowledged"})}})
+        rep = [d for d in self.mgr.report()["devices"] if d["udid"] == mac_udid][0]
+        self.assertTrue(rep["locked"])
+        self.assertEqual(rep["unlock_pin"], cmd["PIN"])
+        # Still "locked" on the dashboard: no second DeviceLock.
+        self.api.queue.clear()
+        self.mgr.reconcile({mac: (False, True, "ava")}, {}, time.time())
+        self.assertNotIn("DeviceLock", [c["RequestType"] for _, c in self.api.queue])
+        # Someone typed the PIN; the Mac checks in again a while later -> unlocked, not re-locked.
+        dev["mac_locked_at"] -= 120
+        self.mgr.handle_webhook({"topic": "mdm.TokenUpdate", "checkin_event": {
+            "udid": mac_udid, "raw_payload": raw({"MessageType": "TokenUpdate", "UDID": mac_udid})}})
+        self.assertFalse(dev["have"]["lost"])
+        self.mgr.reconcile({mac: (False, True, "ava")}, {}, time.time())
+        self.assertNotIn("DeviceLock", [c["RequestType"] for _, c in self.api.queue])
+        # Turning the lock off and on again locks it again.
+        self.mgr.reconcile({mac: (False, False, "ava")}, {}, time.time())
+        self.mgr.reconcile({mac: (False, True, "ava")}, {}, time.time())
+        self.assertIn("DeviceLock", [c["RequestType"] for _, c in self.api.queue])
+
     def test_profiles_are_stable(self):
         a = mdm.downtime_profile(["com.apple.MobileSMS"])
         b = mdm.downtime_profile(["com.apple.MobileSMS"])

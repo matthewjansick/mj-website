@@ -44,6 +44,7 @@ final class Family_Hub_REST {
 		register_rest_route( self::NS, "/profiles/{$id}/lock", array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'lock' ), 'permission_callback' => $parent ) );
 		register_rest_route( self::NS, '/override-all', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'override_all' ), 'permission_callback' => $parent ) );
 		register_rest_route( self::NS, '/settings', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'save_settings' ), 'permission_callback' => $parent ) );
+		register_rest_route( self::NS, '/report/weekly', array( 'methods' => 'GET', 'callback' => array( __CLASS__, 'weekly_preview' ), 'permission_callback' => $parent ) );
 		register_rest_route( self::NS, '/sms/test', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'test_sms' ), 'permission_callback' => $parent ) );
 		register_rest_route( self::NS, '/agent/token', array( 'methods' => 'POST', 'callback' => array( __CLASS__, 'rotate_token' ), 'permission_callback' => $parent ) );
 	}
@@ -194,6 +195,8 @@ final class Family_Hub_REST {
 				'udid'       => $text( $d, 'udid' ),
 				'name'       => $text( $d, 'name' ),
 				'product'    => $text( $d, 'product' ),
+				'platform'   => 'macos' === $text( $d, 'platform' ) ? 'macos' : 'ios',
+				'unlock_pin' => preg_match( '/^\d{6}$/', $text( $d, 'unlock_pin' ) ) ? $text( $d, 'unlock_pin' ) : '',
 				'model'      => $text( $d, 'model' ),
 				'os'         => $text( $d, 'os', 20 ),
 				'serial'     => $text( $d, 'serial', 30 ),
@@ -584,7 +587,7 @@ final class Family_Hub_REST {
 		if ( isset( $in['poll_interval'] ) ) {
 			$settings['poll_interval'] = min( 120, max( 5, absint( $in['poll_interval'] ) ) );
 		}
-		foreach ( array( 'sms_enabled', 'winddown_bedtime' ) as $k ) {
+		foreach ( array( 'sms_enabled', 'winddown_bedtime', 'weekly_report' ) as $k ) {
 			if ( isset( $in[ $k ] ) ) {
 				$settings[ $k ] = (bool) $in[ $k ];
 			}
@@ -652,6 +655,11 @@ final class Family_Hub_REST {
 		Family_Hub_Store::save_settings( $settings );
 		Family_Hub_Store::log_event( 'settings', 'Settings updated', array( 'actor' => self::actor() ) );
 		return self::state();
+	}
+
+	public static function weekly_preview() {
+		$text = Family_Hub_Notify::weekly_summary( time() );
+		return self::no_cache( array( 'text' => $text ? $text : 'No screen-time data yet: it builds up once the home agent is running.' ) );
 	}
 
 	public static function test_sms( WP_REST_Request $request ) {
