@@ -1,0 +1,19 @@
+{
+  "hub": {
+    "url": "https://jansick.com",
+    "token": "PASTE-TOKEN-FROM-DASHBOARD-SETTINGS"
+  },
+  "unifi": {
+    "url": "https://192.168.1.1",
+    "site": "default",
+
+    "api_key": "",
+    "username": "familyhub",
+    "password": "CHANGE-ME",
+
+    "controller_type": "auto",
+    "verify_tls": false,
+    "tls_fingerprint_sha256": ""
+  },
+  "poll_interval": 10
+}
