@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "Anvil",
+    "tagline": "Anvil, by Matthew Jansick.",
+    "theme": "#0a84ff"
+  },
+  "tabs": [
+    { "id": "home",  "title": "Home",  "icon": "home",  "screen": "home" },
+    { "id": "guide", "title": "Guide", "icon": "book",  "screen": "guide" },
+    { "id": "tasks", "title": "Tasks", "icon": "check", "screen": "tasks" },
+    { "id": "about", "title": "About", "icon": "info",  "screen": "about" }
+  ],
+  "screens": {
+    "home": {
+      "title": "Anvil",
+      "lede": "Content for this app will be filled in from the source PDF.",
+      "callout": "**Waiting on the PDF.** This shell is live, but its screens are placeholders until the source document is reviewed and its content added here.",
+      "calloutTone": "warn",
+      "sections": [
+        {
+          "header": "Sections",
+          "items": [
+            { "title": "Guide", "subtitle": "Reference material from the PDF", "icon": "G", "iconColor": "#5856d6", "screen": "guide" },
+            { "title": "Tasks", "subtitle": "Checklists you can tick off", "icon": "T", "iconColor": "#34c759", "screen": "tasks" },
+            { "title": "About", "subtitle": "What this app is and how to install it", "icon": "i", "iconColor": "#8e8e93", "screen": "about" }
+          ]
+        }
+      ]
+    },
+    "guide": {
+      "title": "Guide",
+      "sections": [
+        {
+          "header": "Topics",
+          "items": [
+            { "title": "Example topic", "subtitle": "Replace with the PDF's chapters", "screen": "guide-example" }
+          ],
+          "footer": "Each row opens a detail screen. Add one entry per PDF section."
+        }
+      ]
+    },
+    "guide-example": {
+      "title": "Example topic",
+      "body": "## Placeholder\nThis detail screen shows how body text renders.\n\nIt supports **bold**, headings, and bullet lists:\n- First point\n- Second point"
+    },
+    "tasks": {
+      "title": "Tasks",
+      "sections": [
+        {
+          "type": "checklist",
+          "id": "example",
+          "header": "Example checklist",
+          "items": [
+            { "id": "a", "title": "Attach the PDF to the session", "subtitle": "So its content can be turned into screens" },
+            { "id": "b", "title": "Review the generated screens" },
+            { "id": "c", "title": "Install the plugin and open jansick.com/anvil" }
+          ],
+          "footer": "Progress is saved on this device."
+        }
+      ]
+    },
+    "about": {
+      "title": "About",
+      "body": "Anvil runs as a standalone web app at jansick.com/anvil.\n\n## Install on iPhone\n- Open the page in Safari\n- Tap the Share button\n- Choose **Add to Home Screen**\n\nIt then launches full screen, without browser chrome, like a native app."
+    }
+  }
+}
