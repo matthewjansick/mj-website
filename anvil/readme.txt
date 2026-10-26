@@ -7,7 +7,9 @@ Requires PHP: 7.4
 Stable tag: 0.1.0
 License: GPL-2.0-or-later
 
-Serves the Anvil app as an installable, iOS-style standalone web app at /anvil.
+Hold Fast: The Anvil Academy Fall Retreat 2026 week-of packet (Woodlands Camp, Cleveland, GA) as an installable, iOS-style app at /anvil.
+
+Tabs: Home (letter, arrival and departure, weather, contacts with tap-to-call), Schedule (Wed/Thu/Fri with campus-specific rotations and a live Now marker during the retreat), Packing (checklist saved on device), Housing (searchable cabin roster by campus), Map (zoomable Woodlands map and building key).
 
 == Installation ==
 
@@ -26,4 +28,5 @@ No PHP changes are needed to add or edit screens.
 == Changelog ==
 
 = 0.1.0 =
+* Full retreat packet content.
 * App shell: tab bar, navigation stack with back and edge swipe, grouped lists, checklists with saved progress, dark mode, Add to Home Screen support.

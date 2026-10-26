@@ -273,7 +273,8 @@
       var hits = people.filter(function (p) { return (p.name + ' ' + p.room + ' ' + p.building).toLowerCase().indexOf(q) > -1; }).slice(0, 30);
       if (!hits.length) { results.appendChild(el('div', 'row', '<span></span><span class="row-body"><span class="row-sub">No matches</span></span>')); return; }
       hits.forEach(function (p) {
-        results.appendChild(renderRow({ title: p.name, subtitle: p.building + ' · ' + p.room + ' · ' + campusTitle(p.campus), screen: p.screen }));
+        var where = p.room.indexOf(p.building) === 0 ? p.room : p.building + ' ' + p.room;
+        results.appendChild(renderRow({ title: p.name, subtitle: where + ' · ' + campusTitle(p.campus), screen: p.screen }));
       });
     });
     g.appendChild(wrap); g.appendChild(results);
