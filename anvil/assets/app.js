@@ -1,4 +1,4 @@
-/* Anvil — iOS-style app runtime. Screens come from content.json. */
+/* Hold Fast — iOS-style app runtime. Screens come from content.json. */
 (function () {
   'use strict';
 
@@ -6,131 +6,294 @@
   var host = $('screenHost'), tabbar = $('tabbar'), navTitle = $('navTitle');
   var navBack = $('navBack'), navBackLabel = $('navBackLabel');
   var content = window.ANVIL && window.ANVIL.content ? window.ANVIL.content : { app: {}, tabs: [], screens: {} };
+  var ASSETS = (window.ANVIL && window.ANVIL.assets) || '';
   var screens = content.screens || {};
   var tabs = content.tabs || [];
-  var stacks = {};       // tabId -> [screenId, ...]
+  var campuses = (content.app && content.app.campuses) || [];
+  var stacks = {};
   var activeTab = null;
   var STORE = 'anvil:v1';
   var state = load();
 
   var ICONS = {
     home: '<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>',
-    list: '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
     check: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
-    book: '<svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/><path d="M8 7h8"/></svg>',
-    info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".6"/></svg>',
-    hammer: '<svg viewBox="0 0 24 24"><path d="m14 7 6 6-2 2-6-6z"/><path d="M4 20l8-8"/><path d="M9 4h6l2 3-3 3-5-1z"/></svg>',
-    gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>'
+    bed: '<svg viewBox="0 0 24 24"><path d="M3 18V8"/><path d="M3 14h18v4"/><path d="M21 14v-3a2 2 0 0 0-2-2h-8v5"/><circle cx="7" cy="10" r="2"/></svg>',
+    map: '<svg viewBox="0 0 24 24"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+    list: '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+    info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".6"/></svg>'
   };
 
-  function load() {
-    try { return JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) { return {}; }
-  }
-  function save() {
-    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* private mode */ }
-  }
-  function el(tag, cls, html) {
-    var n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (html != null) n.innerHTML = html;
-    return n;
-  }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-    });
-  }
-  /* Tiny inline markup: **bold**, newlines -> paragraphs, "- " -> bullets, "## " -> heading. */
+  function load() { try { return JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) { return {}; } }
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* private mode */ } }
+  function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>'); }
   function md(text) {
     var out = [], ul = null;
     String(text || '').split(/\n/).forEach(function (line) {
       line = line.trim();
-      if (!line) { if (ul) { out.push(ul); ul = null; } return; }
-      var h = esc(line).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-      if (/^- /.test(line)) { ul = ul || '<ul>'; ul += '<li>' + h.slice(2) + '</li>'; return; }
+      if (!line) { if (ul) { out.push(ul + '</ul>'); ul = null; } return; }
+      if (/^- /.test(line)) { ul = ul || '<ul>'; ul += '<li>' + inline(line.slice(2)) + '</li>'; return; }
       if (ul) { out.push(ul + '</ul>'); ul = null; }
-      if (/^## /.test(line)) out.push('<h2>' + h.slice(3) + '</h2>');
-      else out.push('<p>' + h + '</p>');
+      if (/^## /.test(line)) out.push('<h2>' + inline(line.slice(3)) + '</h2>');
+      else out.push('<p>' + inline(line) + '</p>');
     });
     if (ul) out.push(ul + '</ul>');
     return out.join('');
   }
+  function campusTitle(id) { for (var i = 0; i < campuses.length; i++) if (campuses[i].id === id) return campuses[i].title; return ''; }
+  function myCampus() { return state.campus || ''; }
 
-  /* ---------- rendering ---------- */
+  /* ---------- screens ---------- */
   function renderScreen(id, dir) {
     var s = screens[id];
     var root = el('section', 'screen' + (dir === 'pop' ? ' pop' : ''));
     root.setAttribute('data-screen', id);
-    if (!s) {
-      root.appendChild(el('div', 'empty', '<b>Nothing here yet</b>This screen has no content.'));
-      return root;
+    if (!s) { root.appendChild(el('div', 'empty', '<b>Nothing here yet</b>This screen has no content.')); return root; }
+    if (s.hero) {
+      var h = el('div', 'hero');
+      h.innerHTML = (s.hero.eyebrow ? '<div class="eyebrow">' + esc(s.hero.eyebrow) + '</div>' : '') +
+        '<div class="hero-row"><div><h2 class="large-title">' + esc(s.title) + '</h2>' +
+        (s.hero.sub ? '<p class="lede">' + esc(s.hero.sub) + '</p>' : '') + '</div>' +
+        (s.hero.image ? '<img class="hero-img" alt="" src="' + esc(ASSETS + s.hero.image) + '">' : '') + '</div>';
+      root.appendChild(h);
+    } else if (s.largeTitle !== false) {
+      root.appendChild(el('h2', 'large-title', esc(s.title)));
+      if (s.lede) root.appendChild(el('p', 'lede', esc(s.lede)));
     }
-    if (s.largeTitle !== false) root.appendChild(el('h2', 'large-title', esc(s.title)));
-    if (s.lede) root.appendChild(el('p', 'lede', esc(s.lede)));
     if (s.callout) root.appendChild(el('div', 'callout' + (s.calloutTone ? ' ' + s.calloutTone : ''), md(s.callout)));
     if (s.body) root.appendChild(el('div', 'prose', md(s.body)));
     (s.sections || []).forEach(function (sec) { root.appendChild(renderSection(sec, id)); });
-    if (!s.body && !(s.sections || []).length) {
-      root.appendChild(el('div', 'empty', '<b>Nothing here yet</b>Content for this screen hasn’t been added.'));
-    }
     return root;
   }
 
-  function renderSection(sec, screenId) {
+  function group(sec) {
     var g = el('div', 'group');
     if (sec.header) g.appendChild(el('div', 'group-header', esc(sec.header)));
-    var list = el('div', 'list');
-    list.setAttribute('role', sec.type === 'checklist' ? 'group' : 'list');
-    if (sec.type === 'checklist') {
-      var key = screenId + ':' + (sec.id || sec.header || '');
-      var done = state[key] || {};
-      var prog = el('div', 'progress', '<i></i>');
-      var update = function () {
-        var n = (sec.items || []).length, d = 0;
-        (sec.items || []).forEach(function (it, i) { if (done[it.id || i]) d++; });
-        prog.firstChild.style.width = (n ? (100 * d / n) : 0) + '%';
-      };
-      (sec.items || []).forEach(function (it, i) {
-        var k = it.id || i;
-        var b = el('button', 'check');
-        b.type = 'button';
-        b.setAttribute('role', 'checkbox');
-        b.setAttribute('aria-checked', done[k] ? 'true' : 'false');
-        b.innerHTML = '<span class="box"></span><span class="row-body"><span class="row-title">' + esc(it.title) + '</span>' +
-          (it.subtitle ? '<span class="row-sub">' + esc(it.subtitle) + '</span>' : '') + '</span>';
-        b.addEventListener('click', function () {
-          done[k] = !done[k];
-          state[key] = done; save();
-          b.setAttribute('aria-checked', done[k] ? 'true' : 'false');
-          update();
-        });
-        list.appendChild(b);
-      });
-      g.appendChild(prog);
-      update();
-    } else {
-      (sec.items || []).forEach(function (it) { list.appendChild(renderRow(it)); });
-    }
-    g.appendChild(list);
+    return g;
+  }
+  function finish(g, sec, list) {
+    if (list) g.appendChild(list);
     if (sec.footer) g.appendChild(el('div', 'group-footer', esc(sec.footer)));
     return g;
   }
 
+  function renderSection(sec, screenId) {
+    switch (sec.type) {
+      case 'checklist': return renderChecklist(sec, screenId);
+      case 'prose': return finish(group(sec), sec, el('div', 'prose', md(sec.body)));
+      case 'campus': return renderCampusPicker(sec);
+      case 'weather': return renderWeather(sec);
+      case 'contacts': return renderContacts(sec);
+      case 'days': return renderDays(sec, screenId);
+      case 'roster': return renderRoster(sec);
+      case 'roster-search': return renderRosterSearch(sec);
+      case 'image': return renderImage(sec);
+      default:
+        var g = group(sec), list = el('div', 'list');
+        (sec.items || []).forEach(function (it) { list.appendChild(renderRow(it)); });
+        return finish(g, sec, list);
+    }
+  }
+
   function renderRow(it) {
-    var link = !!(it.screen || it.href);
+    var link = !!(it.screen || it.href || it.tel);
     var r = el(link ? 'button' : 'div', 'row' + (it.icon ? ' has-icon' : ''));
-    if (link) { r.type = 'button'; r.setAttribute('role', 'listitem'); }
+    if (link) r.type = 'button';
     var icon = it.icon ? '<span class="row-icon" style="background:' + esc(it.iconColor || 'var(--tint)') + '">' + esc(it.icon) + '</span>' : '<span></span>';
     var trail = '';
     if (it.badge) trail += '<span class="badge ' + esc(it.badgeTone || '') + '">' + esc(it.badge) + '</span>';
-    if (it.value) trail += '<span>' + esc(it.value) + '</span>';
-    if (link) trail += '<span class="chev"></span>';
+    if (it.value) trail += '<span class="val">' + esc(it.value) + '</span>';
+    if (it.tel) trail += '<span class="val tint">' + esc(it.tel) + '</span>';
+    if (it.screen || it.href) trail += '<span class="chev"></span>';
     r.innerHTML = icon + '<span class="row-body"><span class="row-title">' + esc(it.title) + '</span>' +
       (it.subtitle ? '<span class="row-sub">' + esc(it.subtitle) + '</span>' : '') + '</span>' +
       '<span class="row-trail">' + trail + '</span>';
     if (it.screen) r.addEventListener('click', function () { push(it.screen); });
     else if (it.href) r.addEventListener('click', function () { window.open(it.href, '_blank', 'noopener'); });
+    else if (it.tel) r.addEventListener('click', function () { location.href = 'tel:' + it.tel.replace(/[^\d+]/g, ''); });
     return r;
+  }
+
+  function renderChecklist(sec, screenId) {
+    var g = group(sec), list = el('div', 'list');
+    var key = screenId + ':' + (sec.id || sec.header || '');
+    var done = state[key] || {};
+    var prog = el('div', 'progress', '<i></i>');
+    var update = function () {
+      var n = (sec.items || []).length, d = 0;
+      (sec.items || []).forEach(function (it, i) { if (done[it.id || i]) d++; });
+      prog.firstChild.style.width = (n ? (100 * d / n) : 0) + '%';
+    };
+    (sec.items || []).forEach(function (it, i) {
+      var k = it.id || i;
+      var b = el('button', 'check');
+      b.type = 'button'; b.setAttribute('role', 'checkbox'); b.setAttribute('aria-checked', done[k] ? 'true' : 'false');
+      b.innerHTML = '<span class="box"></span><span class="row-body"><span class="row-title">' + esc(it.title) + '</span>' +
+        (it.subtitle ? '<span class="row-sub">' + esc(it.subtitle) + '</span>' : '') + '</span>';
+      b.addEventListener('click', function () {
+        done[k] = !done[k]; state[key] = done; save();
+        b.setAttribute('aria-checked', done[k] ? 'true' : 'false'); update();
+      });
+      list.appendChild(b);
+    });
+    g.appendChild(prog); update();
+    return finish(g, sec, list);
+  }
+
+  function segmented(options, value, onChange) {
+    var seg = el('div', 'seg'); seg.setAttribute('role', 'tablist');
+    options.forEach(function (o) {
+      var b = el('button', 'seg-btn', esc(o.title)); b.type = 'button';
+      b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', o.id === value ? 'true' : 'false');
+      b.addEventListener('click', function () {
+        Array.prototype.forEach.call(seg.children, function (c) { c.setAttribute('aria-selected', 'false'); });
+        b.setAttribute('aria-selected', 'true'); onChange(o.id);
+      });
+      seg.appendChild(b);
+    });
+    return seg;
+  }
+
+  function renderCampusPicker(sec) {
+    var g = group(sec);
+    var opts = [{ id: '', title: 'All' }].concat(campuses);
+    g.appendChild(segmented(opts, myCampus(), function (id) { state.campus = id; save(); }));
+    return finish(g, sec, null);
+  }
+
+  function renderWeather(sec) {
+    var g = group(sec), list = el('div', 'list weather');
+    (sec.days || []).forEach(function (d) {
+      list.appendChild(el('div', 'row', '<span></span><span class="row-body"><span class="row-title">' + esc(d.day) + '</span></span>' +
+        '<span class="row-trail"><span class="temp hi">' + esc(d.high) + '°</span><span class="temp lo">' + esc(d.low) + '°</span></span>'));
+    });
+    return finish(g, sec, list);
+  }
+
+  function renderContacts(sec) {
+    var g = group(sec), list = el('div', 'list');
+    var mine = myCampus();
+    var items = (sec.items || []).slice().sort(function (a, b) { return (b.campus === mine) - (a.campus === mine); });
+    items.forEach(function (it) {
+      var row = renderRow(it);
+      if (mine && it.campus === mine) row.classList.add('mine');
+      list.appendChild(row);
+    });
+    return finish(g, sec, list);
+  }
+
+  /* Schedule: day segmented control, campus-aware rotations, "now" marker during the retreat. */
+  function parseTime(dateStr, t) {
+    var m = /(\d+):(\d+)\s*(AM|PM)/i.exec(t); if (!m) return null;
+    var h = +m[1] % 12 + (/PM/i.test(m[3]) ? 12 : 0);
+    var p = dateStr.split('-');
+    return new Date(+p[0], +p[1] - 1, +p[2], h, +m[2]).getTime();
+  }
+  function renderDays(sec, screenId) {
+    var g = group(sec);
+    var days = sec.days || [];
+    var now = Date.now();
+    var todayIdx = -1;
+    days.forEach(function (d, i) { var p = d.date.split('-'); var s = new Date(+p[0], +p[1] - 1, +p[2]).getTime(); if (now >= s && now < s + 864e5) todayIdx = i; });
+    var key = 'day:' + screenId;
+    var cur = state[key] && days.some(function (d) { return d.id === state[key]; }) ? state[key] : (days[todayIdx > -1 ? todayIdx : 0] || {}).id;
+    var body = el('div');
+    var draw = function () {
+      body.innerHTML = '';
+      var d = days.filter(function (x) { return x.id === cur; })[0]; if (!d) return;
+      body.appendChild(el('h2', 'day-title', esc(d.title)));
+      var mine = myCampus();
+      var list = el('div', 'list timeline');
+      var nextMarked = false;
+      var times = d.items.map(function (it) { return parseTime(d.date, it.time); });
+      d.items.forEach(function (it, i) {
+        var r = el('div', 'tl' + (it.kind ? ' ' + it.kind : ''));
+        var t = times[i], tNext = null;
+        for (var j = i + 1; j < times.length; j++) if (times[j] && times[j] > t) { tNext = times[j]; break; }
+        if (t && now >= t && (tNext ? now < tNext : now < t + 36e5)) { r.classList.add('now'); nextMarked = true; }
+        var meta = [];
+        if (it.who) meta.push(esc(it.who));
+        if (it.where) meta.push(esc(it.where));
+        var html = '<span class="tl-time">' + esc(it.time) + '</span><span class="tl-body"><span class="row-title">' + esc(it.title) + '</span>';
+        if (meta.length) html += '<span class="row-sub">' + meta.join(' · ') + '</span>';
+        if (it.campus) {
+          var shown = mine && it.campus[mine] ? [[mine, it.campus[mine]]] : Object.keys(it.campus).map(function (k) { return [k, it.campus[k]]; });
+          html += '<span class="tl-campus">' + shown.map(function (p) { return '<span><b>' + esc(campusTitle(p[0])) + ':</b> ' + esc(p[1]) + '</span>'; }).join('') + '</span>';
+        }
+        if (it.note) html += '<span class="row-sub note">' + esc(it.note).replace(/\n/g, '<br>') + '</span>';
+        r.innerHTML = html + '</span>';
+        list.appendChild(r);
+      });
+      body.appendChild(list);
+    };
+    g.appendChild(segmented(days.map(function (d) { return { id: d.id, title: d.label }; }), cur, function (id) { cur = id; state[key] = id; save(); draw(); }));
+    var mineOpts = [{ id: '', title: 'All' }].concat(campuses);
+    var campusSeg = segmented(mineOpts, myCampus(), function (id) { state.campus = id; save(); draw(); });
+    campusSeg.classList.add('seg-small');
+    g.appendChild(campusSeg);
+    g.appendChild(body); draw();
+    return finish(g, sec, null);
+  }
+
+  /* Housing */
+  function allRooms() {
+    var out = [];
+    Object.keys(screens).forEach(function (sid) {
+      (screens[sid].sections || []).forEach(function (sec) {
+        if (sec.type !== 'roster') return;
+        sec.rooms.forEach(function (r) { r.names.forEach(function (n) { out.push({ name: n, room: r.room, building: sec.building, campus: sec.campus, screen: sid }); }); });
+      });
+    });
+    return out;
+  }
+  function renderRoster(sec) {
+    var g = group({ header: sec.building + (sec.mapNo ? '  ·  #' + sec.mapNo + ' on map' : '') });
+    var list = el('div', 'list');
+    sec.rooms.forEach(function (r) {
+      var row = el('div', 'room');
+      row.innerHTML = '<div class="room-name">' + esc(r.room) + '<span class="count">' + r.names.length + '</span></div><div class="names">' + r.names.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>';
+      list.appendChild(row);
+    });
+    return finish(g, sec, list);
+  }
+  function renderRosterSearch(sec) {
+    var g = el('div', 'group');
+    var wrap = el('div', 'search');
+    wrap.innerHTML = '<input type="search" placeholder="' + esc(sec.placeholder || 'Search') + '" autocomplete="off" autocorrect="off" autocapitalize="words" aria-label="Search housing">';
+    var input = wrap.firstChild;
+    var results = el('div', 'list results'); results.hidden = true;
+    var people = allRooms();
+    input.addEventListener('input', function () {
+      var q = input.value.trim().toLowerCase();
+      results.innerHTML = ''; results.hidden = !q;
+      if (!q) return;
+      var hits = people.filter(function (p) { return (p.name + ' ' + p.room + ' ' + p.building).toLowerCase().indexOf(q) > -1; }).slice(0, 30);
+      if (!hits.length) { results.appendChild(el('div', 'row', '<span></span><span class="row-body"><span class="row-sub">No matches</span></span>')); return; }
+      hits.forEach(function (p) {
+        results.appendChild(renderRow({ title: p.name, subtitle: p.building + ' · ' + p.room + ' · ' + campusTitle(p.campus), screen: p.screen }));
+      });
+    });
+    g.appendChild(wrap); g.appendChild(results);
+    return g;
+  }
+
+  /* Map image with full-screen pan/zoom viewer */
+  function renderImage(sec) {
+    var g = el('div', 'group');
+    var b = el('button', 'figure'); b.type = 'button';
+    b.innerHTML = '<img src="' + esc(ASSETS + sec.src) + '" alt="' + esc(sec.alt || '') + '">' + (sec.caption ? '<span class="caption">' + esc(sec.caption) + '</span>' : '');
+    b.addEventListener('click', function () {
+      var v = el('div', 'viewer');
+      v.innerHTML = '<button type="button" class="viewer-close" aria-label="Close">Done</button><div class="viewer-scroll"><img src="' + esc(ASSETS + sec.src) + '" alt="' + esc(sec.alt || '') + '"></div>';
+      v.querySelector('.viewer-close').addEventListener('click', function () { v.remove(); });
+      document.body.appendChild(v);
+      var sc = v.querySelector('.viewer-scroll'); sc.scrollLeft = (sc.scrollWidth - sc.clientWidth) / 2;
+    });
+    g.appendChild(b);
+    return g;
   }
 
   /* ---------- navigation ---------- */
@@ -147,13 +310,17 @@
       navBackLabel.textContent = stack.length === 2 ? (tabById(activeTab).title || 'Back') : (prev.title || 'Back');
     }
     window.scrollTo(0, 0);
-    history.replaceState({ tab: activeTab, stack: stack.slice() }, '', '#' + activeTab + '/' + stack.slice(1).join('/'));
+    history.replaceState(null, '', '#' + activeTab + '/' + stack.slice(1).join('/'));
   }
-  function push(id) { stacks[activeTab].push(id); show('push'); }
+  function push(id) {
+    /* If the target is a tab root, switch tabs instead of stacking. */
+    for (var i = 0; i < tabs.length; i++) if (tabs[i].screen === id && tabs[i].id !== activeTab) { stacks[tabs[i].id] = [id]; return selectTab(tabs[i].id); }
+    stacks[activeTab].push(id); show('push');
+  }
   function pop() { if (stacks[activeTab].length > 1) { stacks[activeTab].pop(); show('pop'); } }
   function tabById(id) { for (var i = 0; i < tabs.length; i++) if (tabs[i].id === id) return tabs[i]; return {}; }
   function selectTab(id) {
-    if (activeTab === id) { stacks[id] = [tabById(id).screen]; }  // tap again = pop to root
+    if (activeTab === id) stacks[id] = [tabById(id).screen];
     activeTab = id;
     stacks[id] = stacks[id] || [tabById(id).screen];
     Array.prototype.forEach.call(tabbar.children, function (b) { b.setAttribute('aria-selected', b.dataset.tab === id ? 'true' : 'false'); });
@@ -168,7 +335,6 @@
   });
   navBack.addEventListener('click', pop);
 
-  /* Edge-swipe back (iOS gesture) */
   var sx = null, sy = null;
   document.addEventListener('touchstart', function (e) { var t = e.touches[0]; sx = t.clientX < 24 ? t.clientX : null; sy = t.clientY; }, { passive: true });
   document.addEventListener('touchend', function (e) {
@@ -178,7 +344,6 @@
     sx = null;
   }, { passive: true });
 
-  /* Restore from hash */
   var h = location.hash.replace(/^#/, '').split('/').filter(Boolean);
   var startTab = tabById(h[0]).id ? h[0] : (tabs[0] && tabs[0].id);
   if (startTab) {
@@ -188,16 +353,12 @@
     host.appendChild(el('div', 'empty', '<b>No content yet</b>Add tabs and screens to content.json.'));
   }
 
-  /* Add-to-Home-Screen hint for Safari on iPhone when not yet installed */
   var standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
   var isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
   var dismissed = false;
   try { dismissed = localStorage.getItem('anvil:a2hs') === '1'; } catch (e) {}
   if (isiOS && !standalone && !dismissed) {
     $('a2hs').hidden = false;
-    $('a2hsClose').addEventListener('click', function () {
-      $('a2hs').hidden = true;
-      try { localStorage.setItem('anvil:a2hs', '1'); } catch (e) {}
-    });
+    $('a2hsClose').addEventListener('click', function () { $('a2hs').hidden = true; try { localStorage.setItem('anvil:a2hs', '1'); } catch (e) {} });
   }
 })();

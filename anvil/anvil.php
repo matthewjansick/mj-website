@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Anvil
  * Plugin URI:  https://jansick.com/anvil
- * Description: Serves the Anvil app as an installable, iOS-style standalone web app at /anvil.
+ * Description: Hold Fast, The Anvil Academy Fall Retreat 2026 packet as an installable, iOS-style app at /anvil.
  * Version:     0.1.0
  * Author:      Matthew Jansick
  * License:     GPL-2.0-or-later
@@ -92,15 +92,9 @@ function anvil_manifest() {
 		'scope'            => home_url( '/' . ANVIL_SLUG . '/' ),
 		'display'          => 'standalone',
 		'orientation'      => 'portrait',
-		'background_color' => '#f2f2f7',
+		'background_color' => '#f3eee4',
 		'theme_color'      => $theme,
 		'icons'            => array(
-			array(
-				'src'     => ANVIL_URL . 'assets/icon.svg',
-				'sizes'   => 'any',
-				'type'    => 'image/svg+xml',
-				'purpose' => 'any',
-			),
 			array(
 				'src'     => ANVIL_URL . 'assets/icon-512.png',
 				'sizes'   => '512x512',

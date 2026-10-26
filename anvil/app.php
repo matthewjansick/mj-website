@@ -19,12 +19,12 @@ $ver     = ANVIL_VERSION;
 <meta name="description" content="<?php echo esc_attr( isset( $content['app']['tagline'] ) ? $content['app']['tagline'] : $name ); ?>">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?php echo esc_attr( $name ); ?>">
 <meta name="theme-color" content="<?php echo esc_attr( $theme ); ?>">
 <link rel="manifest" href="<?php echo esc_url( home_url( '/' . ANVIL_SLUG . '/manifest.webmanifest' ) ); ?>">
 <link rel="apple-touch-icon" href="<?php echo esc_url( ANVIL_URL . 'assets/icon-512.png' ); ?>">
-<link rel="icon" href="<?php echo esc_url( ANVIL_URL . 'assets/icon.svg' ); ?>" type="image/svg+xml">
+<link rel="icon" href="<?php echo esc_url( ANVIL_URL . 'assets/icon-512.png' ); ?>" type="image/png">
 <link rel="stylesheet" href="<?php echo esc_url( ANVIL_URL . 'assets/app.css?v=' . $ver ); ?>">
 </head>
 <body>
@@ -44,7 +44,7 @@ $ver     = ANVIL_VERSION;
 </div>
 <script>
 window.ANVIL = {
-	contentUrl: <?php echo wp_json_encode( home_url( '/' . ANVIL_SLUG . '/content.json?v=' . $ver ) ); ?>,
+	assets: <?php echo wp_json_encode( ANVIL_URL . 'assets/' ); ?>,
 	content: <?php echo wp_json_encode( $content ); ?>
 };
 </script>
