@@ -1,39 +1,101 @@
 {
   "app": {
     "name": "Hold Fast",
-    "tagline": "The Anvil Academy Fall Retreat 2026, Woodlands Camp, Cleveland, Georgia.",
+    "tagline": "The Anvil Academy Fall Retreat 2026 for the Jansick family. Cumming campus, Woodlands Camp.",
     "theme": "#1f2b33",
-    "campuses": [
-      { "id": "cumming", "title": "Cumming", "code": "A1" },
-      { "id": "dawsonville", "title": "Dawsonville", "code": "A2" },
-      { "id": "woodstock", "title": "Woodstock", "code": "A3" }
-    ],
-    "retreat": { "start": "2026-10-28", "end": "2026-10-30", "timezone": "America/New_York" }
+    "campus": "cumming",
+    "campuses": [],
+    "retreat": {
+      "start": "2026-10-28",
+      "end": "2026-10-30",
+      "timezone": "America/New_York"
+    }
   },
   "tabs": [
-    { "id": "home", "title": "Home", "icon": "home", "screen": "home" },
-    { "id": "schedule", "title": "Schedule", "icon": "calendar", "screen": "schedule" },
-    { "id": "packing", "title": "Packing", "icon": "check", "screen": "packing" },
-    { "id": "housing", "title": "Housing", "icon": "bed", "screen": "housing" },
-    { "id": "map", "title": "Map", "icon": "map", "screen": "map" }
+    {
+      "id": "home",
+      "title": "Home",
+      "icon": "home",
+      "screen": "home"
+    },
+    {
+      "id": "schedule",
+      "title": "Schedule",
+      "icon": "calendar",
+      "screen": "schedule"
+    },
+    {
+      "id": "packing",
+      "title": "Packing",
+      "icon": "check",
+      "screen": "packing"
+    },
+    {
+      "id": "map",
+      "title": "Map",
+      "icon": "map",
+      "screen": "map"
+    }
   ],
   "screens": {
     "home": {
       "title": "See You This Week!",
-      "hero": { "eyebrow": "The Anvil Academy / Fall Retreat 2026", "sub": "Woodlands Camp | Cleveland, Georgia", "image": "holdfast.png" },
+      "hero": {
+        "eyebrow": "The Anvil Academy / Fall Retreat 2026",
+        "sub": "Woodlands Camp | Cleveland, Georgia",
+        "image": "holdfast.png"
+      },
       "sections": [
         {
-          "type": "campus",
-          "header": "My campus",
-          "footer": "Pick your campus to see the right rotations, housing and contact first."
+          "header": "Peter",
+          "items": [
+            {
+              "title": "High Pointe 11",
+              "subtitle": "Cumming campus · High Pointe is #8 on the map",
+              "icon": "P",
+              "iconColor": "#2b5f75",
+              "screen": "cabin"
+            },
+            {
+              "title": "Check-in Wednesday",
+              "subtitle": "West Chapel (#11), 10:00-11:00 AM for first and second year",
+              "icon": "→",
+              "iconColor": "#5c7f3b",
+              "screen": "arrival"
+            },
+            {
+              "title": "Pickup Friday",
+              "subtitle": "Grab-and-go lunch 12:15 PM, departure 12:30 PM",
+              "icon": "←",
+              "iconColor": "#8a5a2b",
+              "screen": "arrival"
+            }
+          ]
         },
         {
           "header": "Quick links",
           "items": [
-            { "title": "Arrival & departure", "subtitle": "Wednesday check-in, Friday departure", "icon": "→", "iconColor": "#2b5f75", "screen": "arrival" },
-            { "title": "Address", "subtitle": "1242 Old Blue Creek Road, Cleveland, GA 30528", "icon": "◎", "iconColor": "#5c7f3b", "href": "https://maps.apple.com/?q=1242+Old+Blue+Creek+Road,+Cleveland,+GA+30528" },
-            { "title": "Weather outlook", "subtitle": "Warm afternoons, chilly mornings", "icon": "☀", "iconColor": "#c98a00", "screen": "weather" },
-            { "title": "Questions this week", "subtitle": "Campus directors, staff and camp office", "icon": "☎", "iconColor": "#8e8e93", "screen": "contacts" }
+            {
+              "title": "Address",
+              "subtitle": "1242 Old Blue Creek Road, Cleveland, GA 30528",
+              "icon": "◎",
+              "iconColor": "#5c7f3b",
+              "href": "https://maps.apple.com/?q=1242+Old+Blue+Creek+Road,+Cleveland,+GA+30528"
+            },
+            {
+              "title": "Weather outlook",
+              "subtitle": "Warm afternoons, chilly mornings",
+              "icon": "☀",
+              "iconColor": "#c98a00",
+              "screen": "weather"
+            },
+            {
+              "title": "Questions this week",
+              "subtitle": "Mr. Cass, staff and camp office",
+              "icon": "☎",
+              "iconColor": "#8e8e93",
+              "screen": "contacts"
+            }
           ]
         },
         {
@@ -49,25 +111,56 @@
         {
           "header": "Address",
           "items": [
-            { "title": "Woodlands Camp", "subtitle": "1242 Old Blue Creek Road, Cleveland, GA 30528", "href": "https://maps.apple.com/?q=1242+Old+Blue+Creek+Road,+Cleveland,+GA+30528", "value": "Directions" }
+            {
+              "title": "Woodlands Camp",
+              "subtitle": "1242 Old Blue Creek Road, Cleveland, GA 30528",
+              "href": "https://maps.apple.com/?q=1242+Old+Blue+Creek+Road,+Cleveland,+GA+30528",
+              "value": "Directions"
+            }
           ]
         },
         {
           "header": "Wednesday check-in",
           "items": [
-            { "title": "West Chapel (#11)", "subtitle": "Find it on the map" , "screen": "map" },
-            { "title": "Core Training", "value": "9:30-10:00 AM" },
-            { "title": "First and second year", "value": "10:00-11:00 AM" },
-            { "title": "Check-in closes", "value": "11:00 AM" },
-            { "title": "Orientation begins", "value": "11:30 AM" }
+            {
+              "title": "West Chapel (#11)",
+              "subtitle": "Find it on the map",
+              "screen": "map"
+            },
+            {
+              "title": "First and second year",
+              "subtitle": "Peter's window",
+              "value": "10:00-11:00 AM"
+            },
+            {
+              "title": "Core Training",
+              "value": "9:30-10:00 AM"
+            },
+            {
+              "title": "Check-in closes",
+              "value": "11:00 AM"
+            },
+            {
+              "title": "Orientation begins",
+              "value": "11:30 AM"
+            }
           ]
         },
         {
           "header": "Friday departure",
           "items": [
-            { "title": "Pack and load luggage", "value": "7:00 AM" },
-            { "title": "Grab-and-go lunch", "value": "12:15 PM" },
-            { "title": "Departure", "value": "12:30 PM" }
+            {
+              "title": "Pack and load luggage",
+              "value": "7:00 AM"
+            },
+            {
+              "title": "Grab-and-go lunch",
+              "value": "12:15 PM"
+            },
+            {
+              "title": "Departure",
+              "value": "12:30 PM"
+            }
           ]
         }
       ]
@@ -79,9 +172,21 @@
         {
           "type": "weather",
           "days": [
-            { "day": "Wed 10/28", "high": 71, "low": 45 },
-            { "day": "Thu 10/29", "high": 71, "low": 46 },
-            { "day": "Fri 10/30", "high": 73, "low": 49 }
+            {
+              "day": "Wed 10/28",
+              "high": 71,
+              "low": 45
+            },
+            {
+              "day": "Thu 10/29",
+              "high": 71,
+              "low": 46
+            },
+            {
+              "day": "Fri 10/30",
+              "high": 73,
+              "low": 49
+            }
           ],
           "footer": "Plan for warm afternoons and chilly mornings and evenings."
         }
@@ -92,19 +197,30 @@
       "sections": [
         {
           "type": "contacts",
-          "header": "Campus directors",
+          "header": "Cumming campus director",
           "items": [
-            { "title": "Cass Brannan", "subtitle": "Cumming", "campus": "cumming", "tel": "(205) 657-4891" },
-            { "title": "Ray Lian", "subtitle": "Dawsonville", "campus": "dawsonville", "tel": "(760) 519-4925" },
-            { "title": "David Millis", "subtitle": "Woodstock", "campus": "woodstock", "tel": "(814) 227-7856" }
+            {
+              "title": "Cass Brannan",
+              "subtitle": "Mr. Cass · Cumming",
+              "campus": "cumming",
+              "tel": "(205) 657-4891"
+            }
           ]
         },
         {
           "type": "contacts",
           "header": "Staff and camp",
           "items": [
-            { "title": "Jeremy Sugarman", "subtitle": "Staff", "tel": "(619) 772-0422" },
-            { "title": "Camp office", "subtitle": "Woodlands Camp", "tel": "(706) 865-0853" }
+            {
+              "title": "Jeremy Sugarman",
+              "subtitle": "Staff",
+              "tel": "(619) 772-0422"
+            },
+            {
+              "title": "Camp office",
+              "subtitle": "Woodlands Camp",
+              "tel": "(706) 865-0853"
+            }
           ]
         }
       ]
@@ -119,15 +235,42 @@
           "id": "packing",
           "header": "Bring",
           "items": [
-            { "id": "bedding", "title": "Twin bedding or sleeping bag, blanket and pillow" },
-            { "id": "towels", "title": "Bath towel, swim towel and toiletries" },
-            { "id": "clothes", "title": "Clothes for three days, extra socks and underwear" },
-            { "id": "warm", "title": "Sweatshirt, long pants and rain jacket" },
-            { "id": "shoes", "title": "Closed-toe athletic or hiking shoes" },
-            { "id": "swim", "title": "Swimsuit and water shoes" },
-            { "id": "water", "title": "Refillable water bottle, small daypack and sunscreen" },
-            { "id": "bible", "title": "Bible, notebook, pen and flashlight" },
-            { "id": "meds", "title": "Personal medications" }
+            {
+              "id": "bedding",
+              "title": "Twin bedding or sleeping bag, blanket and pillow"
+            },
+            {
+              "id": "towels",
+              "title": "Bath towel, swim towel and toiletries"
+            },
+            {
+              "id": "clothes",
+              "title": "Clothes for three days, extra socks and underwear"
+            },
+            {
+              "id": "warm",
+              "title": "Sweatshirt, long pants and rain jacket"
+            },
+            {
+              "id": "shoes",
+              "title": "Closed-toe athletic or hiking shoes"
+            },
+            {
+              "id": "swim",
+              "title": "Swimsuit and water shoes"
+            },
+            {
+              "id": "water",
+              "title": "Refillable water bottle, small daypack and sunscreen"
+            },
+            {
+              "id": "bible",
+              "title": "Bible, notebook, pen and flashlight"
+            },
+            {
+              "id": "meds",
+              "title": "Personal medications"
+            }
           ]
         },
         {
@@ -135,7 +278,10 @@
           "id": "optional",
           "header": "Optional",
           "items": [
-            { "id": "money", "title": "Camp shop spending money" }
+            {
+              "id": "money",
+              "title": "Camp shop spending money"
+            }
           ],
           "footer": "Checked items are saved on this device."
         }
@@ -149,194 +295,411 @@
           "type": "days",
           "days": [
             {
-              "id": "wed", "label": "Wed", "title": "Wednesday / October 28", "date": "2026-10-28",
+              "id": "wed",
+              "label": "Wed",
+              "title": "Wednesday / October 28",
+              "date": "2026-10-28",
               "items": [
-                { "time": "9:30 AM", "title": "Welcome & Check-In Opens", "who": "All", "where": "West Chapel" },
-                { "time": "11:00 AM", "title": "Check-In Closes" },
-                { "time": "11:30 AM", "title": "Opening Words and Orientation", "who": "All", "where": "West Chapel" },
-                { "time": "12:00 PM", "title": "Lunch", "who": "All", "where": "The Commons" },
-                { "time": "1:15 PM", "title": "Session 1: HELD", "who": "All", "where": "West Chapel", "kind": "session" },
-                { "time": "2:45 PM", "title": "Rotation 1: Water Time & Woodlands Attractions", "kind": "rotation",
-                  "campus": { "cumming": "On-Campus Attractions (West Field)", "dawsonville": "Water Time / Adventure Center", "woodstock": "Water Time / Adventure Center" } },
-                { "time": "5:00 PM", "title": "Transition", "kind": "minor" },
-                { "time": "6:00 PM", "title": "Dinner", "who": "All", "where": "The Commons" },
-                { "time": "7:15 PM", "title": "Mega-Games / Campfire Worship", "note": "Groupings and directions to be given by Campus Directors" },
-                { "time": "8:45 PM", "title": "Transition to Cabins & Check-In", "kind": "minor" },
-                { "time": "9:00 PM", "title": "Bunk Room Check-In Discussion" },
-                { "time": "9:30 PM", "title": "Core Training Track: Night 1", "note": "T/Th Cohort: Late Night Zip Line (East Field)" },
-                { "time": "11:00 PM", "title": "Lights Out / Quiet Hours", "kind": "minor" }
+                {
+                  "time": "9:30 AM",
+                  "title": "Welcome & Check-In Opens",
+                  "who": "All",
+                  "where": "West Chapel"
+                },
+                {
+                  "time": "11:00 AM",
+                  "title": "Check-In Closes"
+                },
+                {
+                  "time": "11:30 AM",
+                  "title": "Opening Words and Orientation",
+                  "who": "All",
+                  "where": "West Chapel"
+                },
+                {
+                  "time": "12:00 PM",
+                  "title": "Lunch",
+                  "who": "All",
+                  "where": "The Commons"
+                },
+                {
+                  "time": "1:15 PM",
+                  "title": "Session 1: HELD",
+                  "who": "All",
+                  "where": "West Chapel",
+                  "kind": "session"
+                },
+                {
+                  "time": "2:45 PM",
+                  "title": "Rotation 1: Water Time & Woodlands Attractions",
+                  "kind": "rotation",
+                  "where": "On-Campus Attractions (West Field)"
+                },
+                {
+                  "time": "5:00 PM",
+                  "title": "Transition",
+                  "kind": "minor"
+                },
+                {
+                  "time": "6:00 PM",
+                  "title": "Dinner",
+                  "who": "All",
+                  "where": "The Commons"
+                },
+                {
+                  "time": "7:15 PM",
+                  "title": "Mega-Games / Campfire Worship",
+                  "note": "Groupings and directions to be given by Campus Directors"
+                },
+                {
+                  "time": "8:45 PM",
+                  "title": "Transition to Cabins & Check-In",
+                  "kind": "minor"
+                },
+                {
+                  "time": "9:00 PM",
+                  "title": "Bunk Room Check-In Discussion"
+                },
+                {
+                  "time": "9:30 PM",
+                  "title": "Core Training Track: Night 1",
+                  "note": "T/Th Cohort: Late Night Zip Line (East Field)"
+                },
+                {
+                  "time": "11:00 PM",
+                  "title": "Lights Out / Quiet Hours",
+                  "kind": "minor"
+                }
               ]
             },
             {
-              "id": "thu", "label": "Thu", "title": "Thursday / October 29", "date": "2026-10-29",
+              "id": "thu",
+              "label": "Thu",
+              "title": "Thursday / October 29",
+              "date": "2026-10-29",
               "items": [
-                { "time": "7:00 AM", "title": "Optional Prayer & Worship", "who": "Optional", "where": "West Chapel" },
-                { "time": "7:00 AM", "title": "Breakfast prep / coffee shop", "where": "Coffee Shop", "note": "7:00-7:45 AM" },
-                { "time": "8:00 AM", "title": "Breakfast", "who": "All", "where": "The Commons" },
-                { "time": "8:45 AM", "title": "Transition", "kind": "minor" },
-                { "time": "9:00 AM", "title": "Session 2: FORMED", "who": "All", "where": "West Chapel", "kind": "session" },
-                { "time": "10:00 AM", "title": "Transition", "kind": "minor" },
-                { "time": "10:15 AM", "title": "Rotation 2: Field Activities", "kind": "rotation",
-                  "campus": { "cumming": "Field Games (East Field)", "dawsonville": "Field Games (West Field)", "woodstock": "Field Games (West Field)" },
-                  "note": "Optional: Yonah Mountain Hike" },
-                { "time": "12:15 PM", "title": "Transition", "kind": "minor" },
-                { "time": "12:30 PM", "title": "Lunch", "who": "All", "where": "The Commons" },
-                { "time": "1:30 PM", "title": "Session 3: By Year", "kind": "session",
-                  "note": "1st Year: West Chapel\n2nd Year: East Chapel\nCore Training: Blue Creek basement meeting room" },
-                { "time": "2:45 PM", "title": "Rotation 3: Water Time & Woodlands Attractions", "kind": "rotation",
-                  "campus": { "cumming": "Water Time", "dawsonville": "On-Campus Activities (West Field)", "woodstock": "On-Campus Activities (West Field)" } },
-                { "time": "5:00 PM", "title": "Dads Session / Free Time / Teacher hosted zones", "note": "Dads: Blue Creek Conference Room" },
-                { "time": "6:00 PM", "title": "Dinner", "who": "All", "where": "The Commons" },
-                { "time": "7:15 PM", "title": "Mega Games / Campfire Worship", "note": "Groupings and directions to be given by Campus Directors" },
-                { "time": "8:45 PM", "title": "Transition to Cabins & Check-In", "kind": "minor" },
-                { "time": "9:00 PM", "title": "Bunk Room Check-In Discussion" },
-                { "time": "9:30 PM", "title": "Core Training Track: Night 2", "note": "W/F Cohort: Late Night Zip Line (East Field)" },
-                { "time": "11:00 PM", "title": "Lights Out / Quiet Hours", "who": "All", "kind": "minor" }
+                {
+                  "time": "7:00 AM",
+                  "title": "Optional Prayer & Worship",
+                  "who": "Optional",
+                  "where": "West Chapel"
+                },
+                {
+                  "time": "7:00 AM",
+                  "title": "Breakfast prep / coffee shop",
+                  "where": "Coffee Shop",
+                  "note": "7:00-7:45 AM"
+                },
+                {
+                  "time": "8:00 AM",
+                  "title": "Breakfast",
+                  "who": "All",
+                  "where": "The Commons"
+                },
+                {
+                  "time": "8:45 AM",
+                  "title": "Transition",
+                  "kind": "minor"
+                },
+                {
+                  "time": "9:00 AM",
+                  "title": "Session 2: FORMED",
+                  "who": "All",
+                  "where": "West Chapel",
+                  "kind": "session"
+                },
+                {
+                  "time": "10:00 AM",
+                  "title": "Transition",
+                  "kind": "minor"
+                },
+                {
+                  "time": "10:15 AM",
+                  "title": "Rotation 2: Field Activities",
+                  "kind": "rotation",
+                  "note": "Optional: Yonah Mountain Hike",
+                  "where": "Field Games (East Field)"
+                },
+                {
+                  "time": "12:15 PM",
+                  "title": "Transition",
+                  "kind": "minor"
+                },
+                {
+                  "time": "12:30 PM",
+                  "title": "Lunch",
+                  "who": "All",
+                  "where": "The Commons"
+                },
+                {
+                  "time": "1:30 PM",
+                  "title": "Session 3: By Year",
+                  "kind": "session",
+                  "note": "1st Year: West Chapel\n2nd Year: East Chapel\nCore Training: Blue Creek basement meeting room"
+                },
+                {
+                  "time": "2:45 PM",
+                  "title": "Rotation 3: Water Time & Woodlands Attractions",
+                  "kind": "rotation",
+                  "where": "Water Time"
+                },
+                {
+                  "time": "5:00 PM",
+                  "title": "Dads Session / Free Time / Teacher hosted zones",
+                  "note": "Dads: Blue Creek Conference Room"
+                },
+                {
+                  "time": "6:00 PM",
+                  "title": "Dinner",
+                  "who": "All",
+                  "where": "The Commons"
+                },
+                {
+                  "time": "7:15 PM",
+                  "title": "Mega Games / Campfire Worship",
+                  "note": "Groupings and directions to be given by Campus Directors"
+                },
+                {
+                  "time": "8:45 PM",
+                  "title": "Transition to Cabins & Check-In",
+                  "kind": "minor"
+                },
+                {
+                  "time": "9:00 PM",
+                  "title": "Bunk Room Check-In Discussion"
+                },
+                {
+                  "time": "9:30 PM",
+                  "title": "Core Training Track: Night 2",
+                  "note": "W/F Cohort: Late Night Zip Line (East Field)"
+                },
+                {
+                  "time": "11:00 PM",
+                  "title": "Lights Out / Quiet Hours",
+                  "who": "All",
+                  "kind": "minor"
+                }
               ]
             },
             {
-              "id": "fri", "label": "Fri", "title": "Friday / October 30", "date": "2026-10-30",
+              "id": "fri",
+              "label": "Fri",
+              "title": "Friday / October 30",
+              "date": "2026-10-30",
               "items": [
-                { "time": "7:00 AM", "title": "Pack & Clean Cabins", "who": "All" },
-                { "time": "7:30 AM", "title": "Transition to Breakfast", "kind": "minor" },
-                { "time": "8:00 AM", "title": "Breakfast", "who": "All", "where": "The Commons" },
-                { "time": "9:00 AM", "title": "Rotation 4: Field Activities", "kind": "rotation",
-                  "campus": { "cumming": "Field Games (West Field)", "dawsonville": "Field Games (East Field)", "woodstock": "Field Games (East Field)" },
-                  "note": "Optional: Yonah Mountain Hike" },
-                { "time": "11:00 AM", "title": "Transition to West Chapel", "kind": "minor" },
-                { "time": "11:15 AM", "title": "Session 4: Closing Commissioning", "who": "All", "where": "West Chapel", "kind": "session" },
-                { "time": "12:15 PM", "title": "Grab-and-Go Lunch Distribution", "where": "The Commons / Exit Area" },
-                { "time": "12:30 PM", "title": "Departure", "who": "All" }
+                {
+                  "time": "7:00 AM",
+                  "title": "Pack & Clean Cabins",
+                  "who": "All"
+                },
+                {
+                  "time": "7:30 AM",
+                  "title": "Transition to Breakfast",
+                  "kind": "minor"
+                },
+                {
+                  "time": "8:00 AM",
+                  "title": "Breakfast",
+                  "who": "All",
+                  "where": "The Commons"
+                },
+                {
+                  "time": "9:00 AM",
+                  "title": "Rotation 4: Field Activities",
+                  "kind": "rotation",
+                  "note": "Optional: Yonah Mountain Hike",
+                  "where": "Field Games (West Field)"
+                },
+                {
+                  "time": "11:00 AM",
+                  "title": "Transition to West Chapel",
+                  "kind": "minor"
+                },
+                {
+                  "time": "11:15 AM",
+                  "title": "Session 4: Closing Commissioning",
+                  "who": "All",
+                  "where": "West Chapel",
+                  "kind": "session"
+                },
+                {
+                  "time": "12:15 PM",
+                  "title": "Grab-and-Go Lunch Distribution",
+                  "where": "The Commons / Exit Area"
+                },
+                {
+                  "time": "12:30 PM",
+                  "title": "Departure",
+                  "who": "All"
+                }
               ]
             }
           ],
-          "footer": "A1 = Cumming | A2 = Dawsonville | A3 = Woodstock"
+          "footer": "Cumming campus (A1) schedule."
         }
-      ]
-    },
-    "housing": {
-      "title": "Housing",
-      "sections": [
-        { "type": "roster-search", "placeholder": "Search a name or room" },
-        {
-          "header": "Campuses",
-          "items": [
-            { "title": "Cumming", "subtitle": "Lakewood #7, High Pointe #8 and Clear Lake #12", "icon": "A1", "iconColor": "#2b5f75", "screen": "housing-cumming" },
-            { "title": "Dawsonville", "subtitle": "Montview #14 (MV) and Greenwood #15 (GW)", "icon": "A2", "iconColor": "#5c7f3b", "screen": "housing-dawsonville" },
-            { "title": "Woodstock", "subtitle": "Blue Creek #13 (BC)", "icon": "A3", "iconColor": "#8a5a2b", "screen": "housing-woodstock" }
-          ],
-          "footer": "Find your building on the map page."
-        }
-      ]
-    },
-    "housing-cumming": {
-      "title": "Cumming",
-      "lede": "Contact Mr. Cass with any housing questions.",
-      "sections": [
-        { "type": "roster", "campus": "cumming", "building": "Clear Lake", "mapNo": 12, "rooms": [
-          { "room": "Clear Lake 1", "names": ["Deacon Buffington", "Eli Sampson"] },
-          { "room": "Clear Lake 2", "names": ["Elijah Cushman", "Evan Ray"] },
-          { "room": "Clear Lake 3", "names": ["Jackson Duggan", "Jacob Garijanian"] },
-          { "room": "Clear Lake 4", "names": ["James Burton", "Jacob Ott"] },
-          { "room": "Clear Lake 5", "names": ["Luke Ellis", "Louis Fountain"] },
-          { "room": "Clear Lake 6", "names": ["Sam Horton", "Nolan Kanet"] },
-          { "room": "Clear Lake 7", "names": ["Wyatt Hall", "Max Hedges"] },
-          { "room": "Clear Lake 8", "names": ["Andrew Culp"] },
-          { "room": "Clear Lake 9", "names": ["Asher Bray", "Ezra Dedicatoria", "Braden Herring", "Ezra Koo", "Hagen Lea", "Austin White"] },
-          { "room": "Clear Lake 10", "names": ["Jack Guptill", "Jack Lorge", "Holden Oakley", "Isaac Thompson", "Samuel Thompson", "Isaac Viera"] },
-          { "room": "Clear Lake 11", "names": ["Richard Anderson", "Rhodes Gresham", "Mac Johnson", "Austin Mann", "Jamie Otwell", "Jadon Taylor"] },
-          { "room": "Clear Lake 12", "names": ["Ace Baggott", "Beckett Brenneman", "Angus Echols", "Connor Emanuel", "Abraham Porta", "Cooper Todd"] }
-        ] },
-        { "type": "roster", "campus": "cumming", "building": "High Pointe", "mapNo": 8, "rooms": [
-          { "room": "High Pointe 1", "names": ["Alex Krumins", "Aiden Metchick"] },
-          { "room": "High Pointe 2", "names": ["Benji Curl", "Crawford Pierce"] },
-          { "room": "High Pointe 3", "names": ["Cash Clendenin", "Camden Laurance"] },
-          { "room": "High Pointe 4", "names": ["Eli Jones", "Charlie Rhodenbaugh"] },
-          { "room": "High Pointe 5", "names": ["Gideon George", "Jackson Kell"] },
-          { "room": "High Pointe 6", "names": ["Jaden Feuerbach", "Jett Johnson"] },
-          { "room": "High Pointe 7", "names": ["Johannes Kaiser", "Kyle Piper"] },
-          { "room": "High Pointe 8", "names": ["Luke Boston", "Maxwell Spurgeon"] },
-          { "room": "High Pointe 9", "names": ["Beau Brummel", "Theodore Brummel", "Evan Price", "Nathan Price", "Peyton Price", "Caleb Schmidt", "Declan Schmidt", "Eliot Utz"] },
-          { "room": "High Pointe 10", "names": ["Judah Armstrong", "Judson Gernatt", "Nathan Guthmann", "Finnigan McWhorter", "Henry Penrod", "Graham Sharp"] },
-          { "room": "High Pointe 11", "names": ["Levi Brumbeloe", "Kolton Davidson", "Peter Jansick", "Matthew Murphy", "Rowan Skellie"] },
-          { "room": "High Pointe 12", "names": ["Sawyer Brummel", "Wyatt Brummel", "Sebastian Hirsch", "Tyler Johnson", "Simeon Messner", "Zachary Stanley"] }
-        ] },
-        { "type": "roster", "campus": "cumming", "building": "Lakewood", "mapNo": 7, "rooms": [
-          { "room": "Lakewood 1", "names": ["Jack Kennedy", "Luke Kennedy", "Jesse Lake", "Torin Miller", "Patrick Nelson", "Smith Pitts", "Nicholas Roeder"] },
-          { "room": "Lakewood 2", "names": ["Rhys Hood", "Eli Lake", "Matthew Malik", "Cooper Payne", "Benjamin Sampson", "Collier Upshaw", "Westley Weatherby", "Colt Welton", "Sam Wintemute"] },
-          { "room": "Lakewood 3", "names": ["Isaiah Bryant", "Henry Bunch", "Huxton Combs", "Ahijah Cookman", "Ezra Hipps", "Jed Larsen"] },
-          { "room": "Lakewood 4", "names": ["Ryan Allen", "Joseph T. Drevlow", "Josaiah Graham", "Miles Morgan", "Joshua Sibley", "Joshua White"] },
-          { "room": "Lakewood 5", "names": ["Tyreak Burbrink", "Ryder Chalk", "Andrew Gregory", "Bowen Hayes", "Parker Koff", "Moses Valencia"] },
-          { "room": "Lakewood 6", "names": ["Timothy Allman", "Parker Chupp", "Michael (MJ) Hatrak", "Nathan Massey", "Parker McFarland III", "Wyatt Williams"] },
-          { "room": "Lakewood 7", "names": ["Luke Christopher", "Matthew Diven", "Levi Knowles", "James Roetman", "Jonah Slide", "Hayden Sotomayor"] },
-          { "room": "Lakewood 8", "names": ["Ford Amason", "Brett Hires", "Elijah Hughes", "Dakota Owens", "Camden Schier", "Brayden Weathers"] }
-        ] }
-      ]
-    },
-    "housing-dawsonville": {
-      "title": "Dawsonville",
-      "lede": "Contact Mr. Ray with any housing questions.",
-      "sections": [
-        { "type": "roster", "campus": "dawsonville", "building": "Greenwood", "code": "GW", "mapNo": 15, "rooms": [
-          { "room": "GW1", "names": ["Barrett Mcmillian", "Brooks Erickson", "Davey Robertson", "Eli Brown", "Sam Brown", "Graham Davis"] },
-          { "room": "GW2", "names": ["Nelson Makinson", "Oliver Beaumont", "Eli Beaumont", "Pacey Hall", "Shepherd Burrell", "Joseph Breeden"] },
-          { "room": "GW3", "names": ["Desmond Seibel", "Bennett Hahn", "Evan Masterson", "Gray Srodoski", "Jace Holtzinger", "Joshua Sollars"] },
-          { "room": "GW4", "names": ["Connor Hudson", "Gavin and Milo Davis", "Nilas Ciziunas", "Wyatt Kilpatrick", "Cam Crockett"] },
-          { "room": "GW5", "names": ["Danny Fuller", "Leyden Hamby", "Owen Towler", "Mr. Ray", "Gideon Sweat"] },
-          { "room": "GW6", "names": ["Brooks Fields", "Evan Liang", "Gray Merritt", "Jacob Faure", "Luke Evans", "Sam Newman"] },
-          { "room": "GW7", "names": ["Keegan Williams", "Mason Martin", "Ezra Gaston", "Sawyer Pink", "Wesley Fernandez"] }
-        ] },
-        { "type": "roster", "campus": "dawsonville", "building": "Montview", "code": "MV", "mapNo": 14, "rooms": [
-          { "room": "MV9", "names": ["Adam O'Brien", "Aiden Chatman", "Frank Powell", "Maddox Smith", "Slade Samples"] },
-          { "room": "MV10", "names": ["Banner Burger", "Bennett Lawson", "Jay Clark", "Philip Hurst", "Titus Frazier", "Tristan Ford"] },
-          { "room": "MV11", "names": ["Bennett Thompson", "Briggs Eve", "Colson Larkin", "Dan Becher", "Everett Kitchen", "Rhett Willis"] },
-          { "room": "MV12", "names": ["Andy Patchen", "Huxley Pinder", "Jude Angle", "Logan Thomas-Aponte", "William Thomas-Aponte", "Parker Johnson", "Riley Liseo"] }
-        ] }
-      ]
-    },
-    "housing-woodstock": {
-      "title": "Woodstock",
-      "lede": "Contact Mr. David with any housing questions.",
-      "sections": [
-        { "type": "roster", "campus": "woodstock", "building": "Blue Creek", "code": "BC", "mapNo": 13, "rooms": [
-          { "room": "BC1", "names": ["Michael Adcock", "Gage Cochran", "Asher Jones", "Gavin Luna", "Caleb Shults", "Tristan Vieira", "Nico Vieira"] },
-          { "room": "BC2", "names": ["Benjamin Butler", "Liam Cummings", "Hilden Diehl", "Grayson Dunn", "Hudson Lemons", "Andrew Pagan"] },
-          { "room": "BC3", "names": ["Clancy Bujeker", "Isaac Jones", "Sam Knight", "Elliott Reed", "Bronson Reyes", "Ethan Smith"] },
-          { "room": "BC5", "names": ["Becket Collier", "Asher Fowler", "Lochlan Lawley", "Tate Ruplin", "Carter Thornton", "Rhett VanGalder"] },
-          { "room": "BC6", "names": ["Truett Darnell", "Knox Johnson", "Will Joyner", "Benjamin Litton", "James Monroe", "Jonathan Wynne"] },
-          { "room": "BC7", "names": ["Lucas DeSoto", "Samuel DeSoto", "Grayson Fowler", "Steven Grant", "Bennett Moss", "Charlie Robinson", "Reed Wilhite"] },
-          { "room": "BC8", "names": ["Jett Hagstrom", "Hank Howell", "Gabriel Nakonechnyy", "Drake Porter"] }
-        ] }
       ]
     },
     "map": {
       "title": "Woodlands Map",
       "sections": [
-        { "type": "image", "src": "map.jpg", "alt": "Illustrated map of Woodlands Camp with numbered buildings around the lake", "caption": "Tap to zoom and pan." },
         {
-          "header": "Where each campus stays",
+          "type": "image",
+          "src": "map.jpg",
+          "alt": "Illustrated map of Woodlands Camp with numbered buildings around the lake",
+          "caption": "Tap to zoom and pan."
+        },
+        {
+          "header": "Cumming buildings",
           "items": [
-            { "title": "Cumming", "subtitle": "Lakewood #7, High Pointe #8 and Clear Lake #12", "icon": "A1", "iconColor": "#2b5f75", "screen": "housing-cumming" },
-            { "title": "Dawsonville", "subtitle": "Montview #14 (MV) and Greenwood #15 (GW)", "icon": "A2", "iconColor": "#5c7f3b", "screen": "housing-dawsonville" },
-            { "title": "Woodstock", "subtitle": "Blue Creek #13 (BC)", "icon": "A3", "iconColor": "#8a5a2b", "screen": "housing-woodstock" }
+            {
+              "title": "High Pointe",
+              "subtitle": "Peter · High Pointe 11",
+              "value": "#8",
+              "screen": "cabin"
+            },
+            {
+              "title": "Lakewood",
+              "value": "#7"
+            },
+            {
+              "title": "Clear Lake",
+              "value": "#12"
+            },
+            {
+              "title": "West Chapel",
+              "subtitle": "Check-in, sessions",
+              "value": "#11"
+            },
+            {
+              "title": "Commons / Office",
+              "subtitle": "Meals, grab-and-go lunch",
+              "value": "#9"
+            }
           ]
         },
         {
           "header": "East",
           "items": [
-            { "title": "Pine Cove", "value": "1" }, { "title": "Dome", "value": "2" }, { "title": "Timber Ridge", "value": "3" },
-            { "title": "East Trading Post", "value": "4" }, { "title": "Old Chapel", "value": "5" }, { "title": "East Chapel", "value": "6" },
-            { "title": "Lakewood", "value": "7" }, { "title": "High Pointe", "value": "8" }, { "title": "Commons / Office", "value": "9" },
-            { "title": "Lodge", "value": "10" }
+            {
+              "title": "Pine Cove",
+              "value": "1"
+            },
+            {
+              "title": "Dome",
+              "value": "2"
+            },
+            {
+              "title": "Timber Ridge",
+              "value": "3"
+            },
+            {
+              "title": "East Trading Post",
+              "value": "4"
+            },
+            {
+              "title": "Old Chapel",
+              "value": "5"
+            },
+            {
+              "title": "East Chapel",
+              "value": "6"
+            },
+            {
+              "title": "Lakewood",
+              "value": "7"
+            },
+            {
+              "title": "High Pointe",
+              "value": "8"
+            },
+            {
+              "title": "Commons / Office",
+              "value": "9"
+            },
+            {
+              "title": "Lodge",
+              "value": "10"
+            }
           ]
         },
         {
           "header": "West",
           "items": [
-            { "title": "West Chapel", "value": "11" }, { "title": "Clear Lake", "value": "12" }, { "title": "Blue Creek", "value": "13" },
-            { "title": "Montview", "value": "14" }, { "title": "Greenwood", "value": "15" }, { "title": "West Trading Post", "value": "16" },
-            { "title": "Barn", "value": "17" }
+            {
+              "title": "West Chapel",
+              "value": "11"
+            },
+            {
+              "title": "Clear Lake",
+              "value": "12"
+            },
+            {
+              "title": "Blue Creek",
+              "value": "13"
+            },
+            {
+              "title": "Montview",
+              "value": "14"
+            },
+            {
+              "title": "Greenwood",
+              "value": "15"
+            },
+            {
+              "title": "West Trading Post",
+              "value": "16"
+            },
+            {
+              "title": "Barn",
+              "value": "17"
+            }
           ]
+        }
+      ]
+    },
+    "cabin": {
+      "title": "High Pointe 11",
+      "lede": "Cumming campus. High Pointe is building #8, on the East side.",
+      "sections": [
+        {
+          "type": "roster",
+          "campus": "cumming",
+          "building": "High Pointe",
+          "mapNo": 8,
+          "rooms": [
+            {
+              "room": "High Pointe 11",
+              "names": [
+                "Peter Jansick",
+                "Levi Brumbeloe",
+                "Kolton Davidson",
+                "Matthew Murphy",
+                "Rowan Skellie"
+              ]
+            }
+          ]
+        },
+        {
+          "header": "Cumming buildings",
+          "items": [
+            {
+              "title": "High Pointe",
+              "subtitle": "Peter's building",
+              "value": "#8",
+              "screen": "map"
+            },
+            {
+              "title": "Lakewood",
+              "value": "#7",
+              "screen": "map"
+            },
+            {
+              "title": "Clear Lake",
+              "value": "#12",
+              "screen": "map"
+            }
+          ],
+          "footer": "Contact Mr. Cass with any housing questions."
         }
       ]
     }

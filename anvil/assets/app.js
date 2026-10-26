@@ -44,7 +44,7 @@
     return out.join('');
   }
   function campusTitle(id) { for (var i = 0; i < campuses.length; i++) if (campuses[i].id === id) return campuses[i].title; return ''; }
-  function myCampus() { return state.campus || ''; }
+  function myCampus() { return (content.app && content.app.campus) || state.campus || ''; }
 
   /* ---------- screens ---------- */
   function renderScreen(id, dir) {
@@ -230,10 +230,11 @@
       body.appendChild(list);
     };
     g.appendChild(segmented(days.map(function (d) { return { id: d.id, title: d.label }; }), cur, function (id) { cur = id; state[key] = id; save(); draw(); }));
-    var mineOpts = [{ id: '', title: 'All' }].concat(campuses);
-    var campusSeg = segmented(mineOpts, myCampus(), function (id) { state.campus = id; save(); draw(); });
-    campusSeg.classList.add('seg-small');
-    g.appendChild(campusSeg);
+    if (campuses.length) {
+      var campusSeg = segmented([{ id: '', title: 'All' }].concat(campuses), myCampus(), function (id) { state.campus = id; save(); draw(); });
+      campusSeg.classList.add('seg-small');
+      g.appendChild(campusSeg);
+    }
     g.appendChild(body); draw();
     return finish(g, sec, null);
   }
