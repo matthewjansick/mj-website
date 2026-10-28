@@ -308,72 +308,69 @@
               "items": [
                 {
                   "time": "9:30 AM",
-                  "title": "Welcome & Check-In Opens",
-                  "who": "All",
+                  "title": "Check-in opens",
                   "where": "West Chapel"
                 },
                 {
                   "time": "11:00 AM",
-                  "title": "Check-In Closes"
+                  "title": "Check-in closes"
                 },
                 {
                   "time": "11:30 AM",
-                  "title": "Opening Words and Orientation",
-                  "who": "All",
+                  "title": "Opening words + orientation",
                   "where": "West Chapel"
                 },
                 {
                   "time": "12:00 PM",
                   "title": "Lunch",
-                  "who": "All",
                   "where": "The Commons"
                 },
                 {
                   "time": "1:15 PM",
-                  "title": "Session 1: HELD",
-                  "who": "All",
+                  "title": "Session 1 · HOLD FAST - HELD",
                   "where": "West Chapel",
                   "kind": "session"
                 },
                 {
                   "time": "2:45 PM",
-                  "title": "Rotation 1: Water Time & Woodlands Attractions",
-                  "kind": "rotation",
-                  "where": "On-Campus Attractions (West Field)"
+                  "title": "Rotation 1",
+                  "where": "Woodlands Attractions, West Field",
+                  "note": "Shop open",
+                  "kind": "rotation"
                 },
                 {
                   "time": "5:00 PM",
                   "title": "Transition",
+                  "note": "Cabins: dry off and wash up",
                   "kind": "minor"
                 },
                 {
                   "time": "6:00 PM",
                   "title": "Dinner",
-                  "who": "All",
                   "where": "The Commons"
                 },
                 {
                   "time": "7:15 PM",
-                  "title": "Mega-Games / Campfire Worship",
-                  "note": "Groupings and directions to be given by Campus Directors"
+                  "title": "All-camp evening Mega-Games",
+                  "where": "West Field"
                 },
                 {
                   "time": "8:45 PM",
-                  "title": "Transition to Cabins & Check-In",
+                  "title": "Return to cabins",
                   "kind": "minor"
                 },
                 {
                   "time": "9:00 PM",
-                  "title": "Bunk Room Check-In Discussion"
+                  "title": "Bunkroom check-in discussion"
                 },
                 {
                   "time": "9:30 PM",
-                  "title": "Core Training Track: Night 1",
-                  "note": "T/Th Cohort: Late Night Zip Line (East Field)"
+                  "title": "Core Training · Night 1",
+                  "note": "T/Th cohort: late-night zipline, East Field"
                 },
                 {
                   "time": "11:00 PM",
-                  "title": "Lights Out / Quiet Hours",
+                  "title": "Lights out / quiet hours",
                   "kind": "minor"
                 }
               ]
@@ -386,20 +383,17 @@
               "items": [
                 {
                   "time": "7:00 AM",
-                  "title": "Optional Prayer & Worship",
-                  "who": "Optional",
+                  "title": "Optional prayer + worship",
                   "where": "West Chapel"
                 },
                 {
-                  "time": "7:00 AM",
-                  "title": "Breakfast prep / coffee shop",
-                  "where": "Coffee Shop",
-                  "note": "7:00-7:45 AM"
+                  "time": "7:30 AM",
+                  "title": "Morning Time",
+                  "note": "Coffee shop open 7:00-7:45 AM"
                 },
                 {
                   "time": "8:00 AM",
                   "title": "Breakfast",
-                  "who": "All",
                   "where": "The Commons"
                 },
                 {
@@ -409,22 +403,22 @@
                 },
                 {
                   "time": "9:00 AM",
-                  "title": "Session 2: FORMED",
-                  "who": "All",
+                  "title": "Session 2 · HOLD FAST - FORMED",
                   "where": "West Chapel",
                   "kind": "session"
                 },
                 {
                   "time": "10:00 AM",
                   "title": "Transition",
+                  "note": "Gear up for field activities or excursion",
                   "kind": "minor"
                 },
                 {
                   "time": "10:15 AM",
-                  "title": "Rotation 2: Field Activities",
-                  "kind": "rotation",
-                  "note": "Optional: Yonah Mountain Hike",
-                  "where": "Field Games (East Field)"
+                  "title": "Rotation 2 · Field activities",
+                  "where": "East Field",
+                  "note": "Optional: Yonah Mountain hike",
+                  "kind": "rotation"
                 },
                 {
                   "time": "12:15 PM",
@@ -434,55 +428,54 @@
                 {
                   "time": "12:30 PM",
                   "title": "Lunch",
-                  "who": "All",
                   "where": "The Commons"
                 },
                 {
                   "time": "1:30 PM",
-                  "title": "Session 3: By Year",
+                  "title": "Session 3 · By year",
                   "kind": "session",
-                  "note": "1st Year: West Chapel\n2nd Year: East Chapel\nCore Training: Blue Creek basement meeting room"
+                  "note": "First year: West Chapel\nSecond year: Old Chapel or East Chapel\nCore Training: Blue Creek basement meeting room"
                 },
                 {
                   "time": "2:45 PM",
-                  "title": "Rotation 3: Water Time & Woodlands Attractions",
-                  "kind": "rotation",
-                  "where": "Water Time"
+                  "title": "Rotation 3",
+                  "where": "Watertime",
+                  "note": "Shop open",
+                  "kind": "rotation"
                 },
                 {
                   "time": "5:00 PM",
-                  "title": "Dads Session / Free Time / Teacher hosted zones",
-                  "note": "Dads: Blue Creek Conference Room"
+                  "title": "Dads session",
+                  "where": "West Chapel",
+                  "note": "Boys: free time in teacher-hosted zones"
                 },
                 {
                   "time": "6:00 PM",
                   "title": "Dinner",
-                  "who": "All",
                   "where": "The Commons"
                 },
                 {
                   "time": "7:15 PM",
-                  "title": "Mega Games / Campfire Worship",
-                  "note": "Groupings and directions to be given by Campus Directors"
+                  "title": "Campfire worship + reflection",
+                  "where": "Campus-specific campfire rings"
                 },
                 {
                   "time": "8:45 PM",
-                  "title": "Transition to Cabins & Check-In",
+                  "title": "Return to cabins",
                   "kind": "minor"
                 },
                 {
                   "time": "9:00 PM",
-                  "title": "Bunk Room Check-In Discussion"
+                  "title": "Bunk room check-in discussion"
                 },
                 {
                   "time": "9:30 PM",
-                  "title": "Core Training Track: Night 2",
-                  "note": "W/F Cohort: Late Night Zip Line (East Field)"
+                  "title": "Core Training · Night 2",
+                  "note": "W/F cohort: late-night zip line, East Field"
                 },
                 {
                   "time": "11:00 PM",
-                  "title": "Lights Out / Quiet Hours",
-                  "who": "All",
+                  "title": "Lights out / quiet hours",
                   "kind": "minor"
                 }
               ]
@@ -495,53 +488,52 @@
               "items": [
                 {
                   "time": "7:00 AM",
-                  "title": "Pack & Clean Cabins",
-                  "who": "All"
+                  "title": "Pack & clean cabins",
+                  "note": "Pack and load luggage"
                 },
                 {
                   "time": "7:30 AM",
-                  "title": "Transition to Breakfast",
+                  "title": "Transition to breakfast",
+                  "note": "Walk to The Commons",
                   "kind": "minor"
                 },
                 {
                   "time": "8:00 AM",
                   "title": "Breakfast",
-                  "who": "All",
                   "where": "The Commons"
                 },
                 {
                   "time": "9:00 AM",
-                  "title": "Rotation 4: Field Activities",
-                  "kind": "rotation",
-                  "note": "Optional: Yonah Mountain Hike",
-                  "where": "Field Games (West Field)"
+                  "title": "Rotation 4 · Field activities",
+                  "where": "West Field",
+                  "note": "Optional: Yonah Mountain hike",
+                  "kind": "rotation"
                 },
                 {
                   "time": "11:00 AM",
                   "title": "Transition to West Chapel",
+                  "note": "Gather for the final session",
                   "kind": "minor"
                 },
                 {
                   "time": "11:15 AM",
-                  "title": "Session 4: SENT / Closing Commissioning",
-                  "who": "All",
+                  "title": "Session 4 · HOLD FAST - SENT",
                   "where": "West Chapel",
                   "kind": "session"
                 },
                 {
                   "time": "12:15 PM",
-                  "title": "Grab-and-Go Lunch Distribution",
-                  "where": "The Commons / Exit Area"
+                  "title": "Grab-and-go lunch",
+                  "where": "The Commons"
                 },
                 {
                   "time": "12:30 PM",
-                  "title": "Departure",
-                  "who": "All"
+                  "title": "Departure"
                 }
               ]
             }
           ],
-          "footer": "Cumming campus (A1) schedule."
+          "footer": "Cumming (A1) schedule, from the printed Hold Fast booklet."
         }
       ]
     },
@@ -751,7 +743,7 @@
           "items": [
             {
               "title": "Dads' Meeting",
-              "subtitle": "Dads' Session · Thursday 5:00 PM",
+              "subtitle": "Dads' Session · Thursday 5:00 PM · West Chapel",
               "icon": "D",
               "iconColor": "#8a5a2b",
               "screen": "notes-dads"
@@ -901,7 +893,7 @@
     },
     "notes-dads": {
       "title": "Dads' Meeting",
-      "lede": "Dads' Session · Thursday 5:00 PM · Blue Creek Conference Room",
+      "lede": "Dads' Session · Thursday 5:00 PM · West Chapel",
       "sections": [
         {
           "type": "notes",
