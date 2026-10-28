@@ -750,8 +750,8 @@
           "header": "Dads",
           "items": [
             {
-              "title": "Dads Meeting",
-              "subtitle": "Thursday 5:00 PM · Blue Creek Conference Room",
+              "title": "Dads' Meeting",
+              "subtitle": "Dads' Session · Thursday 5:00 PM",
               "icon": "D",
               "iconColor": "#8a5a2b",
               "screen": "notes-dads"
@@ -759,13 +759,28 @@
           ]
         },
         {
-          "header": "After the retreat",
+          "header": "Carry it home",
           "items": [
             {
-              "title": "Carry it home",
+              "title": "Carry It Home",
+              "subtitle": "Anchor · Brotherhood · Mission",
               "icon": "⌂",
               "iconColor": "#5c7f3b",
               "screen": "notes-home"
+            },
+            {
+              "title": "Choose Your Own Adventure",
+              "subtitle": "On-campus ideas and nearby outings",
+              "icon": "↗",
+              "iconColor": "#c98a00",
+              "screen": "adventure"
+            },
+            {
+              "title": "Notes",
+              "subtitle": "Free page",
+              "icon": "✎",
+              "iconColor": "#8e8e93",
+              "screen": "notes-free"
             }
           ]
         }
@@ -885,8 +900,8 @@
       ]
     },
     "notes-dads": {
-      "title": "Dads Meeting",
-      "lede": "Thursday 5:00 PM · Blue Creek Conference Room",
+      "title": "Dads' Meeting",
+      "lede": "Dads' Session · Thursday 5:00 PM · Blue Creek Conference Room",
       "sections": [
         {
           "type": "notes",
@@ -895,41 +910,118 @@
             {
               "id": "notes",
               "label": "Notes",
-              "rows": 8
-            },
-            {
-              "id": "step",
-              "label": "One step to practice",
-              "rows": 2
+              "rows": 14
             }
           ]
         }
       ]
     },
     "notes-home": {
-      "title": "Carry it home",
-      "lede": "What goes home with us from Woodlands.",
+      "title": "Carry It Home",
+      "lede": "Choose a small, specific step. Tell someone. Make a plan to return to this conversation together.",
       "sections": [
         {
           "type": "notes",
           "id": "home",
           "fields": [
             {
-              "id": "commit",
-              "label": "Commitments",
-              "rows": 5
+              "id": "anchor",
+              "label": "Anchor · A truth I will return to",
+              "rows": 3
             },
             {
-              "id": "memories",
-              "label": "Memories",
-              "rows": 5
+              "id": "brotherhood",
+              "label": "Brotherhood · A relationship I will invest in",
+              "rows": 3
             },
             {
-              "id": "next",
-              "label": "Next steps as a family",
-              "rows": 4
+              "id": "mission",
+              "label": "Mission · A responsibility I will take up",
+              "rows": 3
             }
           ]
+        }
+      ]
+    },
+    "notes-free": {
+      "title": "Notes",
+      "sections": [
+        {
+          "type": "notes",
+          "id": "free",
+          "fields": [
+            {
+              "id": "notes",
+              "label": "Notes",
+              "rows": 18
+            }
+          ]
+        }
+      ]
+    },
+    "adventure": {
+      "title": "Choose Your Own Adventure",
+      "lede": "Tick the ones you and Peter do.",
+      "sections": [
+        {
+          "type": "checklist",
+          "id": "campus",
+          "header": "Simple on-campus ideas",
+          "items": [
+            {
+              "id": "longway",
+              "title": "Take the Long Way",
+              "subtitle": "Walk one of the Woodlands trails and explore the wilderness. Let your son choose the route and pace.",
+              "quote": "What's something about your world that you wish I understood better?"
+            },
+            {
+              "id": "photos",
+              "title": "The Five-Photo Quest",
+              "subtitle": "Find and photograph five things that represent courage, strength, beauty, brotherhood, and hope. Compare your choices afterward. Use your phone as a camera, then put it away.",
+              "quote": "Which picture says the most about who you want to become?"
+            },
+            {
+              "id": "teach",
+              "title": "Teach Me Something",
+              "subtitle": "Each gets 20 minutes to teach the other a skill: a knot, drawing trick, juggling, a ball skill, or something else he enjoys. Finish with a cooperative challenge.",
+              "quote": "What's something you'd enjoy getting better at together?"
+            },
+            {
+              "id": "letter",
+              "title": "A Letter for the Road Ahead",
+              "subtitle": "Find a quiet spot. Dad writes three specific things he sees growing in his son; the son writes something he appreciates and something he'd like to do together. Read them aloud if comfortable, then choose one next step.",
+              "quote": "What's one thing we want to keep doing when we get home?"
+            }
+          ]
+        },
+        {
+          "type": "checklist",
+          "id": "outings",
+          "header": "Nearby outings",
+          "items": [
+            {
+              "id": "shakes",
+              "title": "Two Shakes, Two Stories",
+              "subtitle": "Visit Soda Fountain Café or Chick-fil-A. Your son chooses the treat; Dad tells a funny story and a hard story from when he was his son's age.",
+              "quote": "What surprised you about what I was like at your age?"
+            },
+            {
+              "id": "river",
+              "title": "Walk Beside the River",
+              "subtitle": "Explore the Helen-to-Hardman Heritage Trail. It's a free, paved riverside trail, one mile each way. Start at the Hardman end and turn around early if needed."
+            },
+            {
+              "id": "creek",
+              "title": "Creekside Snack and Slow Down",
+              "subtitle": "Take a snack to Smithgall Woods. Walk the short Visitor Center Loop beside Dukes Creek, then sit together. Spend five minutes listening before talking. Parking is currently $10 per vehicle."
+            },
+            {
+              "id": "mill",
+              "title": "Figure Out How It Works",
+              "subtitle": "Visit Nora Mill Granary, a working historic gristmill. Discover how water becomes useful work. Pick a mix to cook together at home."
+            }
+          ],
+          "footer": "Checked items are saved on this phone."
         }
       ]
     }

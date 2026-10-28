@@ -134,7 +134,8 @@
       var b = el('button', 'check');
       b.type = 'button'; b.setAttribute('role', 'checkbox'); b.setAttribute('aria-checked', done[k] ? 'true' : 'false');
       b.innerHTML = '<span class="box"></span><span class="row-body"><span class="row-title">' + esc(it.title) + '</span>' +
-        (it.subtitle ? '<span class="row-sub">' + esc(it.subtitle) + '</span>' : '') + '</span>';
+        (it.subtitle ? '<span class="row-sub">' + esc(it.subtitle) + '</span>' : '') +
+        (it.quote ? '<span class="row-sub quote">\u201C' + esc(it.quote) + '\u201D</span>' : '') + '</span>';
       b.addEventListener('click', function () {
         done[k] = !done[k]; state[key] = done; save();
         b.setAttribute('aria-checked', done[k] ? 'true' : 'false'); update();
