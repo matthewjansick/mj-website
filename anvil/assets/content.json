@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "Hold Fast",
-    "tagline": "The Anvil Academy Fall Retreat 2026 for the Jansick family. Cumming campus, Woodlands Camp.",
+    "tagline": "The Anvil Academy Fall Retreat 2026 companion for the Jansick family. Cumming campus, Woodlands Camp.",
     "theme": "#1f2b33",
     "campus": "cumming",
     "campuses": [],
@@ -485,35 +485,6 @@
           "caption": "Tap to zoom and pan."
         },
         {
-          "header": "Cumming buildings",
-          "items": [
-            {
-              "title": "High Pointe",
-              "subtitle": "Peter · High Pointe 11",
-              "value": "#8",
-              "screen": "cabin"
-            },
-            {
-              "title": "Lakewood",
-              "value": "#7"
-            },
-            {
-              "title": "Clear Lake",
-              "value": "#12"
-            },
-            {
-              "title": "West Chapel",
-              "subtitle": "Check-in, sessions",
-              "value": "#11"
-            },
-            {
-              "title": "Commons / Office",
-              "subtitle": "Meals, grab-and-go lunch",
-              "value": "#9"
-            }
-          ]
-        },
-        {
           "header": "East",
           "items": [
             {
@@ -590,52 +561,6 @@
               "value": "17"
             }
           ]
-        }
-      ]
-    },
-    "cabin": {
-      "title": "High Pointe 11",
-      "lede": "Cumming campus. High Pointe is building #8, on the East side.",
-      "sections": [
-        {
-          "type": "roster",
-          "campus": "cumming",
-          "building": "High Pointe",
-          "mapNo": 8,
-          "rooms": [
-            {
-              "room": "High Pointe 11",
-              "names": [
-                "Peter Jansick",
-                "Levi Brumbeloe",
-                "Kolton Davidson",
-                "Matthew Murphy",
-                "Rowan Skellie"
-              ]
-            }
-          ]
-        },
-        {
-          "header": "Cumming buildings",
-          "items": [
-            {
-              "title": "High Pointe",
-              "subtitle": "Peter's building",
-              "value": "#8",
-              "screen": "map"
-            },
-            {
-              "title": "Lakewood",
-              "value": "#7",
-              "screen": "map"
-            },
-            {
-              "title": "Clear Lake",
-              "value": "#12",
-              "screen": "map"
-            }
-          ],
-          "footer": "Contact Mr. Cass with any housing questions."
         }
       ]
     },
@@ -758,18 +683,6 @@
       "sections": [
         {
           "type": "today"
-        },
-        {
-          "header": "Peter",
-          "items": [
-            {
-              "title": "High Pointe 11",
-              "subtitle": "Cumming campus · building #8 on the map",
-              "icon": "P",
-              "iconColor": "#2b5f75",
-              "screen": "cabin"
-            }
-          ]
         },
         {
           "header": "Quick links",
@@ -1151,18 +1064,6 @@
     "more": {
       "title": "More",
       "sections": [
-        {
-          "header": "Peter",
-          "items": [
-            {
-              "title": "High Pointe 11",
-              "subtitle": "Cabin and bunkmates",
-              "icon": "P",
-              "iconColor": "#2b5f75",
-              "screen": "cabin"
-            }
-          ]
-        },
         {
           "type": "sync",
           "header": "Notes",

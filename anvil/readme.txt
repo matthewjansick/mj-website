@@ -9,7 +9,7 @@ License: GPL-2.0-or-later
 
 Hold Fast: The Anvil Academy Fall Retreat 2026 week-of packet (Woodlands Camp, Cleveland, GA) as an installable, iOS-style app at /anvil.
 
-Weekend companion for the Jansick family, Cumming campus. Tabs: Today (now, next and the rest of the day, Peter's cabin, quick links), Schedule (Wed/Thu/Fri from the printed booklet, sessions tap through to their pages), Sessions (overview plus notes for HELD, FORMED, Anvil Year Breakouts, SENT and the Dads' Meeting, with Carry It Home and Choose Your Own Adventure), Map (zoomable Woodlands map), More (arrival, address, packing, weather, contacts).
+Weekend companion for the Jansick family, Cumming campus. Tabs: Today (now, next and the rest of the day, quick links), Schedule (Wed/Thu/Fri from the printed booklet, sessions tap through to their pages), Sessions (overview plus notes for HELD, FORMED, Anvil Year Breakouts, SENT and the Dads' Meeting, with Carry It Home and Choose Your Own Adventure), Map (zoomable Woodlands map), More (arrival, address, packing, weather, contacts).
 
 == Installation ==
 
