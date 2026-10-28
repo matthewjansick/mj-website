@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $content = anvil_content();
 $name    = isset( $content['app']['name'] ) ? $content['app']['name'] : 'Anvil';
 $theme   = isset( $content['app']['theme'] ) ? $content['app']['theme'] : '#0a84ff';
-$ver     = ANVIL_VERSION;
+$ver     = ANVIL_VERSION . '.' . max( (int) filemtime( ANVIL_DIR . 'assets/app.js' ), (int) filemtime( ANVIL_DIR . 'assets/app.css' ) );
 ?>
 <!doctype html>
 <html lang="en">

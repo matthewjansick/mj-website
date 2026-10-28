@@ -4,7 +4,7 @@ Tags: pwa, app, ios
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 0.3.0
 License: GPL-2.0-or-later
 
 Hold Fast: The Anvil Academy Fall Retreat 2026 week-of packet (Woodlands Camp, Cleveland, GA) as an installable, iOS-style app at /anvil.
@@ -31,6 +31,6 @@ No PHP changes are needed to add or edit screens.
 
 == Changelog ==
 
-= 0.1.0 =
+= 0.3.0 =
 * Full retreat packet content.
 * App shell: tab bar, navigation stack with back and edge swipe, grouped lists, checklists with saved progress, dark mode, Add to Home Screen support.
