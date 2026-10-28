@@ -20,6 +20,10 @@ Weekend companion for the Jansick family, Cumming campus. Tabs: Today (now, next
 
 If /anvil returns a 404, go to Settings > Permalinks and click Save to flush rewrite rules.
 
+== Saving notes to the site ==
+
+Notes autosave on the phone. To also save them to the site (so they survive and show on every family device), set a Family passcode under Settings > Hold Fast, then in the app open More > Notes > Enter family passcode, or tap Save on any notes page. Notes are stored in the `anvil_notes` option and exposed only through `/wp-json/anvil/v1/notes` with the passcode in an `X-Anvil-Key` header. You can also define `ANVIL_NOTES_KEY` in wp-config.php.
+
 == Editing content ==
 
 All screens, lists, checklists and detail text live in `assets/content.json`.

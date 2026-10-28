@@ -119,3 +119,134 @@ function anvil_content() {
 	}
 	return $cache;
 }
+
+/**
+ * Notes sync: a tiny REST API that stores the family's notes in a WordPress
+ * option, protected by a passcode set under Settings > Hold Fast.
+ */
+function anvil_notes_key() {
+	if ( defined( 'ANVIL_NOTES_KEY' ) && ANVIL_NOTES_KEY ) {
+		return (string) ANVIL_NOTES_KEY;
+	}
+	return (string) get_option( 'anvil_notes_key', '' );
+}
+
+function anvil_rest_permission( $request ) {
+	$key = anvil_notes_key();
+	if ( '' === $key ) {
+		return new WP_Error( 'anvil_no_key', 'Set a passcode under Settings > Hold Fast first.', array( 'status' => 403 ) );
+	}
+	$sent = (string) $request->get_header( 'x-anvil-key' );
+	if ( ! hash_equals( $key, $sent ) ) {
+		return new WP_Error( 'anvil_bad_key', 'Wrong passcode.', array( 'status' => 401 ) );
+	}
+	return true;
+}
+
+function anvil_rest_routes() {
+	register_rest_route( 'anvil/v1', '/notes', array(
+		array(
+			'methods'             => 'GET',
+			'callback'            => 'anvil_rest_get_notes',
+			'permission_callback' => 'anvil_rest_permission',
+		),
+		array(
+			'methods'             => 'POST',
+			'callback'            => 'anvil_rest_save_notes',
+			'permission_callback' => 'anvil_rest_permission',
+		),
+	) );
+}
+add_action( 'rest_api_init', 'anvil_rest_routes' );
+
+function anvil_rest_get_notes() {
+	$data = get_option( 'anvil_notes', array() );
+	return rest_ensure_response( is_array( $data ) ? $data : array() );
+}
+
+/**
+ * Body: { "entries": { "<key>": { "value": <json>, "updated": <ms> } } }
+ * Entries merge per key; the newer "updated" wins. Returns the merged set.
+ */
+function anvil_rest_save_notes( $request ) {
+	$body    = $request->get_json_params();
+	$entries = isset( $body['entries'] ) && is_array( $body['entries'] ) ? $body['entries'] : array();
+	$stored  = get_option( 'anvil_notes', array() );
+	if ( ! is_array( $stored ) ) {
+		$stored = array();
+	}
+	foreach ( $entries as $key => $entry ) {
+		$key = sanitize_text_field( (string) $key );
+		if ( '' === $key || strlen( $key ) > 100 || ! is_array( $entry ) ) {
+			continue;
+		}
+		$updated = isset( $entry['updated'] ) ? (int) $entry['updated'] : 0;
+		if ( isset( $stored[ $key ]['updated'] ) && (int) $stored[ $key ]['updated'] >= $updated ) {
+			continue;
+		}
+		$stored[ $key ] = array(
+			'value'   => anvil_sanitize_deep( isset( $entry['value'] ) ? $entry['value'] : '' ),
+			'updated' => $updated,
+		);
+	}
+	if ( strlen( wp_json_encode( $stored ) ) > 1048576 ) {
+		return new WP_Error( 'anvil_too_big', 'Notes are too large to save.', array( 'status' => 413 ) );
+	}
+	update_option( 'anvil_notes', $stored, false );
+	return rest_ensure_response( $stored );
+}
+
+function anvil_sanitize_deep( $v ) {
+	if ( is_array( $v ) ) {
+		$out = array();
+		foreach ( $v as $k => $x ) {
+			$out[ sanitize_text_field( (string) $k ) ] = anvil_sanitize_deep( $x );
+		}
+		return $out;
+	}
+	if ( is_bool( $v ) || is_int( $v ) || is_float( $v ) ) {
+		return $v;
+	}
+	return sanitize_textarea_field( (string) $v );
+}
+
+/* Settings > Hold Fast: the family passcode. */
+function anvil_settings_menu() {
+	add_options_page( 'Hold Fast', 'Hold Fast', 'manage_options', 'anvil', 'anvil_settings_page' );
+}
+add_action( 'admin_menu', 'anvil_settings_menu' );
+
+function anvil_settings_init() {
+	register_setting( 'anvil', 'anvil_notes_key', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+}
+add_action( 'admin_init', 'anvil_settings_init' );
+
+function anvil_settings_page() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$count = count( (array) get_option( 'anvil_notes', array() ) );
+	?>
+	<div class="wrap">
+		<h1>Hold Fast</h1>
+		<p>The app lives at <a href="<?php echo esc_url( home_url( '/' . ANVIL_SLUG . '/' ) ); ?>"><?php echo esc_html( home_url( '/' . ANVIL_SLUG . '/' ) ); ?></a>.</p>
+		<form method="post" action="options.php">
+			<?php settings_fields( 'anvil' ); ?>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><label for="anvil_notes_key">Family passcode</label></th>
+					<td>
+						<input type="text" id="anvil_notes_key" name="anvil_notes_key" class="regular-text" value="<?php echo esc_attr( get_option( 'anvil_notes_key', '' ) ); ?>" <?php disabled( defined( 'ANVIL_NOTES_KEY' ) ); ?>>
+						<p class="description">Enter this once in the app (More &gt; Save notes to jansick.com) to save notes to this site. Leave blank to keep notes on the phone only.<?php if ( defined( 'ANVIL_NOTES_KEY' ) ) echo ' Set in wp-config.php.'; ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">Saved notes</th>
+					<td><?php echo (int) $count; ?> saved entries.</td>
+				</tr>
+			</table>
+			<?php submit_button(); ?>
+		</form>
+	</div>
+	<?php
+}

@@ -29,6 +29,7 @@
 
   function load() { try { return JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) { return {}; } }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* private mode */ } }
+  function touch(key) { state._meta = state._meta || {}; state._meta[key] = Date.now(); save(); sync.schedule(); }
   function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>'); }
@@ -95,6 +96,7 @@
       case 'image': return renderImage(sec);
       case 'notes': return renderNotes(sec, screenId);
       case 'today': return renderToday(sec);
+      case 'sync': return renderSync(sec);
       default:
         var g = group(sec), list = el('div', 'list');
         (sec.items || []).forEach(function (it) { list.appendChild(renderRow(it)); });
@@ -103,7 +105,7 @@
   }
 
   function renderRow(it) {
-    var link = !!(it.screen || it.href || it.tel);
+    var link = !!(it.screen || it.href || it.tel || it.action);
     var r = el(link ? 'button' : 'div', 'row' + (it.icon ? ' has-icon' : ''));
     if (link) r.type = 'button';
     var icon = it.icon ? '<span class="row-icon" style="background:' + esc(it.iconColor || 'var(--tint)') + '">' + esc(it.icon) + '</span>' : '<span></span>';
@@ -139,7 +141,7 @@
         (it.subtitle ? '<span class="row-sub">' + esc(it.subtitle) + '</span>' : '') +
         (it.quote ? '<span class="row-sub quote">\u201C' + esc(it.quote) + '\u201D</span>' : '') + '</span>';
       b.addEventListener('click', function () {
-        done[k] = !done[k]; state[key] = done; save();
+        done[k] = !done[k]; state[key] = done; touch(key);
         b.setAttribute('aria-checked', done[k] ? 'true' : 'false'); update();
       });
       list.appendChild(b);
@@ -347,23 +349,119 @@
       var ta = w.querySelector('textarea');
       ta.value = saved[f.id] || '';
       var grow = function () { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
-      ta.addEventListener('input', function () { saved[f.id] = ta.value; state[key] = saved; save(); grow(); });
+      ta.addEventListener('input', function () { saved[f.id] = ta.value; state[key] = saved; touch(key); grow(); setStatus(); });
       list.appendChild(w);
       requestAnimationFrame(grow);
     });
     g.appendChild(list);
     var bar = el('div', 'note-actions');
-    var share = el('button', 'note-btn', 'Share notes'); share.type = 'button';
+    var status = el('span', 'note-status');
+    var setStatus = function (msg) { status.textContent = msg || sync.describe(); };
+    sync.onChange(setStatus); setStatus();
+    var saveBtn = el('button', 'note-btn primary', 'Save'); saveBtn.type = 'button';
+    saveBtn.addEventListener('click', function () {
+      if (!sync.key()) { if (sync.ask()) sync.push(true); return; }
+      sync.push(true);
+    });
+    bar.appendChild(status); bar.appendChild(saveBtn);
+    var share = el('button', 'note-btn', 'Share'); share.type = 'button';
     share.addEventListener('click', function () {
       var title = (screens[screenId] || {}).title || 'Notes';
       var text = title + '\n\n' + (sec.fields || []).map(function (f) { return f.label.toUpperCase() + '\n' + (saved[f.id] || '').trim() + '\n'; }).join('\n');
       if (navigator.share) { navigator.share({ title: title, text: text }).catch(function () {}); }
-      else if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function () { share.textContent = 'Copied'; setTimeout(function () { share.textContent = 'Share notes'; }, 1500); }); }
+      else if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function () { share.textContent = 'Copied'; setTimeout(function () { share.textContent = 'Share'; }, 1500); }); }
     });
     bar.appendChild(share);
     g.appendChild(bar);
-    g.appendChild(el('div', 'group-footer', 'Saved automatically on this phone.'));
+    g.appendChild(el('div', 'group-footer', 'Saved on this phone as you type. Save sends it to jansick.com so it survives and shows on other devices.'));
     return g;
+  }
+
+  /* Notes sync to the WordPress site */
+  var sync = (function () {
+    var url = (window.ANVIL && window.ANVIL.notesUrl) || '';
+    var enabled = !!(window.ANVIL && window.ANVIL.syncEnabled) && !!url;
+    var KEYS = 'anvil:key', LAST = 'anvil:lastSync';
+    var timer = null, busy = false, listeners = [], last = { ok: null, msg: '', at: 0 };
+    function key() { try { return localStorage.getItem(KEYS) || ''; } catch (e) { return ''; } }
+    function setKey(k) { try { if (k) localStorage.setItem(KEYS, k); else localStorage.removeItem(KEYS); } catch (e) {} emit(); }
+    function onChange(fn) { listeners.push(fn); }
+    function emit() { listeners.forEach(function (f) { try { f(); } catch (e) {} }); }
+    function syncable(k) { return k !== '_meta' && k !== 'campus' && k.indexOf('day:') !== 0; }
+    function fmt(t) { var d = new Date(t); var h = d.getHours(), m = d.getMinutes(); return (h % 12 || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? ' AM' : ' PM'); }
+    function describe() {
+      if (!enabled) return 'Saved on this phone';
+      if (!key()) return 'Saved on this phone. Tap Save to add the family passcode.';
+      if (busy) return 'Saving\u2026';
+      if (last.ok === false) return last.msg;
+      var meta = state._meta || {}, lastAt = +(localStorage.getItem(LAST) || 0), dirty = false;
+      Object.keys(meta).forEach(function (k) { if (meta[k] > lastAt) dirty = true; });
+      if (dirty) return 'Unsaved changes';
+      if (lastAt) return 'Saved to jansick.com \u00B7 ' + fmt(lastAt);
+      return 'Ready to save';
+    }
+    function ask() {
+      var k = window.prompt('Family passcode (set under Settings > Hold Fast on jansick.com)');
+      if (k == null) return false;
+      setKey(k.trim()); return !!k.trim();
+    }
+    function request(method, body) {
+      return fetch(url, { method: method, headers: { 'Content-Type': 'application/json', 'X-Anvil-Key': key() }, body: body ? JSON.stringify(body) : undefined })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j && j.message ? j.message : 'Save failed'); return j; }); });
+    }
+    function merge(server) {
+      var changed = false, meta = state._meta || {};
+      Object.keys(server || {}).forEach(function (k) {
+        var e = server[k]; if (!e || !syncable(k)) return;
+        if (!(meta[k] >= e.updated)) { state[k] = e.value; meta[k] = e.updated; changed = true; }
+      });
+      state._meta = meta; save();
+      return changed;
+    }
+    function push(explicit) {
+      if (!enabled || !key() || busy) return;
+      var meta = state._meta || {}, entries = {};
+      Object.keys(meta).forEach(function (k) { if (syncable(k) && k in state) entries[k] = { value: state[k], updated: meta[k] }; });
+      busy = true; emit();
+      request('POST', { entries: entries }).then(function (server) {
+        busy = false; last = { ok: true, msg: '', at: Date.now() };
+        try { localStorage.setItem(LAST, String(Date.now())); } catch (e) {}
+        if (merge(server)) rerender();
+        emit();
+      }).catch(function (err) {
+        busy = false; last = { ok: false, msg: 'Not saved: ' + err.message, at: Date.now() };
+        if (/passcode/i.test(err.message) && explicit) setKey('');
+        emit();
+      });
+    }
+    function pull() {
+      if (!enabled || !key()) return;
+      request('GET').then(function (server) { if (merge(server)) rerender(); try { if (!localStorage.getItem(LAST)) localStorage.setItem(LAST, String(Date.now())); } catch (e) {} emit(); })
+        .catch(function (err) { last = { ok: false, msg: 'Not synced: ' + err.message, at: Date.now() }; emit(); });
+    }
+    function schedule() { if (!enabled || !key()) return; clearTimeout(timer); timer = setTimeout(function () { push(false); }, 2500); }
+    window.addEventListener('online', function () { push(false); });
+    return { key: key, setKey: setKey, ask: ask, push: push, pull: pull, schedule: schedule, describe: describe, onChange: onChange, enabled: enabled };
+  })();
+  function rerender() { if (activeTab) show('none'); }
+
+  function renderSync(sec) {
+    var g = group({ header: sec.header || 'Save notes to jansick.com' });
+    var list = el('div', 'list');
+    var draw = function () {
+      list.innerHTML = '';
+      if (!sync.enabled) { list.appendChild(el('div', 'row', '<span></span><span class="row-body"><span class="row-title">Not set up</span><span class="row-sub">Set a family passcode under Settings &gt; Hold Fast on jansick.com.</span></span>')); return; }
+      if (sync.key()) {
+        list.appendChild(renderRow({ title: 'Saving to jansick.com', subtitle: sync.describe(), badge: 'On', badgeTone: 'green' }));
+        var b1 = renderRow({ title: 'Save now', action: true }); b1.classList.add('tint'); b1.addEventListener('click', function () { sync.push(true); }); list.appendChild(b1);
+        var b2 = renderRow({ title: 'Forget passcode on this phone', action: true }); b2.classList.add('tint'); b2.addEventListener('click', function () { sync.setKey(''); draw(); }); list.appendChild(b2);
+      } else {
+        var b = renderRow({ title: 'Enter family passcode', action: true, subtitle: 'Notes then save to jansick.com and show on every device with the passcode.' });
+        b.classList.add('tint'); b.addEventListener('click', function () { if (sync.ask()) { sync.pull(); sync.push(true); } draw(); }); list.appendChild(b);
+      }
+    };
+    sync.onChange(draw); draw();
+    return finish(g, { footer: sec.footer || 'Notes always stay on this phone too.' }, list);
   }
 
   /* Map image with full-screen pan/zoom viewer */
@@ -439,6 +537,8 @@
   } else {
     host.appendChild(el('div', 'empty', '<b>No content yet</b>Add tabs and screens to content.json.'));
   }
+
+  sync.pull();
 
   var standalone = window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
   var isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;

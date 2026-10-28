@@ -1140,6 +1140,11 @@
           ]
         },
         {
+          "type": "sync",
+          "header": "Notes",
+          "footer": "Notes always stay on this phone too. The passcode is set under Settings > Hold Fast in WordPress."
+        },
+        {
           "header": "Getting there and back",
           "items": [
             {

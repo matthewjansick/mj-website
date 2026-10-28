@@ -45,6 +45,8 @@ $ver     = ANVIL_VERSION;
 <script>
 window.ANVIL = {
 	assets: <?php echo wp_json_encode( ANVIL_URL . 'assets/' ); ?>,
+	notesUrl: <?php echo wp_json_encode( rest_url( 'anvil/v1/notes' ) ); ?>,
+	syncEnabled: <?php echo anvil_notes_key() ? 'true' : 'false'; ?>,
 	content: <?php echo wp_json_encode( $content ); ?>
 };
 </script>

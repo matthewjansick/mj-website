@@ -189,3 +189,9 @@ h1,h2,h3,p{margin:0}
 .today-more{color:var(--tint);font-weight:600;font-size:15px;text-align:left;padding:10px 0 6px}
 .tl.link{text-align:left;color:var(--ink);grid-template-columns:72px 1fr auto;align-items:center}
 .tl.link .chev{transform:rotate(-135deg);width:9px;height:9px;border-width:2px;margin:0;color:var(--ink-3)}
+
+/* Sync */
+.note-actions{display:flex;align-items:center;gap:14px;padding:10px 4px 0}
+.note-status{flex:1;font-size:13px;color:var(--ink-3)}
+.note-btn.primary{background:var(--tint);color:#fff;padding:7px 14px;border-radius:999px}
+.row.tint .row-title{color:var(--tint)}
