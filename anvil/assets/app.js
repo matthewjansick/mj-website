@@ -22,6 +22,7 @@
     bed: '<svg viewBox="0 0 24 24"><path d="M3 18V8"/><path d="M3 14h18v4"/><path d="M21 14v-3a2 2 0 0 0-2-2h-8v5"/><circle cx="7" cy="10" r="2"/></svg>',
     map: '<svg viewBox="0 0 24 24"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
     list: '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+    pen: '<svg viewBox="0 0 24 24"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M12.5 7.5l4 4"/></svg>',
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".6"/></svg>'
   };
 
@@ -91,6 +92,7 @@
       case 'roster': return renderRoster(sec);
       case 'roster-search': return renderRosterSearch(sec);
       case 'image': return renderImage(sec);
+      case 'notes': return renderNotes(sec, screenId);
       default:
         var g = group(sec), list = el('div', 'list');
         (sec.items || []).forEach(function (it) { list.appendChild(renderRow(it)); });
@@ -279,6 +281,37 @@
       });
     });
     g.appendChild(wrap); g.appendChild(results);
+    return g;
+  }
+
+  /* Notebook pages: autosaved textareas with share/copy */
+  function renderNotes(sec, screenId) {
+    var g = el('div', 'group');
+    var key = 'notes:' + (sec.id || screenId);
+    var saved = state[key] || {};
+    var list = el('div', 'list notes');
+    (sec.fields || []).forEach(function (f) {
+      var w = el('label', 'note-field');
+      w.innerHTML = '<span class="note-label">' + esc(f.label) + '</span><textarea rows="' + (f.rows || 3) + '" placeholder="\u2026"></textarea>';
+      var ta = w.querySelector('textarea');
+      ta.value = saved[f.id] || '';
+      var grow = function () { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+      ta.addEventListener('input', function () { saved[f.id] = ta.value; state[key] = saved; save(); grow(); });
+      list.appendChild(w);
+      requestAnimationFrame(grow);
+    });
+    g.appendChild(list);
+    var bar = el('div', 'note-actions');
+    var share = el('button', 'note-btn', 'Share notes'); share.type = 'button';
+    share.addEventListener('click', function () {
+      var title = (screens[screenId] || {}).title || 'Notes';
+      var text = title + '\n\n' + (sec.fields || []).map(function (f) { return f.label.toUpperCase() + '\n' + (saved[f.id] || '').trim() + '\n'; }).join('\n');
+      if (navigator.share) { navigator.share({ title: title, text: text }).catch(function () {}); }
+      else if (navigator.clipboard) { navigator.clipboard.writeText(text).then(function () { share.textContent = 'Copied'; setTimeout(function () { share.textContent = 'Share notes'; }, 1500); }); }
+    });
+    bar.appendChild(share);
+    g.appendChild(bar);
+    g.appendChild(el('div', 'group-footer', 'Saved automatically on this phone.'));
     return g;
   }
 
