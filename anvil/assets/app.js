@@ -23,6 +23,7 @@
     map: '<svg viewBox="0 0 24 24"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
     list: '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
     pen: '<svg viewBox="0 0 24 24"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="M12.5 7.5l4 4"/></svg>',
+    more: '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".6"/></svg>'
   };
 
@@ -93,6 +94,7 @@
       case 'roster-search': return renderRosterSearch(sec);
       case 'image': return renderImage(sec);
       case 'notes': return renderNotes(sec, screenId);
+      case 'today': return renderToday(sec);
       default:
         var g = group(sec), list = el('div', 'list');
         (sec.items || []).forEach(function (it) { list.appendChild(renderRow(it)); });
@@ -213,7 +215,8 @@
       var nextMarked = false;
       var times = d.items.map(function (it) { return parseTime(d.date, it.time); });
       d.items.forEach(function (it, i) {
-        var r = el('div', 'tl' + (it.kind ? ' ' + it.kind : ''));
+        var r = el(it.screen ? 'button' : 'div', 'tl' + (it.kind ? ' ' + it.kind : '') + (it.screen ? ' link' : ''));
+        if (it.screen) { r.type = 'button'; r.addEventListener('click', function () { push(it.screen); }); }
         var t = times[i], tNext = null;
         for (var j = i + 1; j < times.length; j++) if (times[j] && times[j] > t) { tNext = times[j]; break; }
         if (t && now >= t && (tNext ? now < tNext : now < t + 36e5)) { r.classList.add('now'); nextMarked = true; }
@@ -227,7 +230,7 @@
           html += '<span class="tl-campus">' + shown.map(function (p) { return '<span><b>' + esc(campusTitle(p[0])) + ':</b> ' + esc(p[1]) + '</span>'; }).join('') + '</span>';
         }
         if (it.note) html += '<span class="row-sub note">' + esc(it.note).replace(/\n/g, '<br>') + '</span>';
-        r.innerHTML = html + '</span>';
+        r.innerHTML = html + '</span>' + (it.screen ? '<span class="chev"></span>' : '');
         list.appendChild(r);
       });
       body.appendChild(list);
@@ -240,6 +243,53 @@
     }
     g.appendChild(body); draw();
     return finish(g, sec, null);
+  }
+
+  /* Today: where we are in the weekend, from the schedule screen's days */
+  function scheduleDays() {
+    var out = [];
+    Object.keys(screens).forEach(function (sid) { (screens[sid].sections || []).forEach(function (sec) { if (sec.type === 'days') out = out.concat(sec.days || []); }); });
+    return out;
+  }
+  function renderToday(sec) {
+    var g = el('div', 'group');
+    var days = scheduleDays();
+    var now = Date.now();
+    var all = [];
+    days.forEach(function (d, di) { d.items.forEach(function (it) { var t = parseTime(d.date, it.time); if (t) all.push({ t: t, it: it, day: d, di: di }); }); });
+    all.sort(function (a, b) { return a.t - b.t; });
+    var cur = null, next = null, later = [];
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].t <= now) cur = all[i];
+      else { if (!next) next = all[i]; else later.push(all[i]); }
+    }
+    var first = all[0], last = all[all.length - 1];
+    var card = el('div', 'today');
+    var row = function (label, e, tone) {
+      var h = '<div class="today-row' + (tone ? ' ' + tone : '') + '"><span class="today-label">' + label + '</span><span class="today-time">' + esc(e.it.time) + '</span><span class="today-title">' + esc(e.it.title) + '</span>' + (e.it.where ? '<span class="row-sub">' + esc(e.it.where) + '</span>' : '') + '</div>';
+      var b = el(e.it.screen ? 'button' : 'div', 'today-item', h);
+      if (e.it.screen) { b.type = 'button'; b.addEventListener('click', function () { push(e.it.screen); }); }
+      return b;
+    };
+    if (!first || now < first.t) {
+      var ms = first ? first.t - now : 0, dys = Math.floor(ms / 864e5), hrs = Math.floor((ms % 864e5) / 36e5);
+      card.innerHTML = '<div class="today-head">' + (first ? 'Retreat starts ' + (dys ? dys + 'd ' : '') + hrs + 'h' : 'Retreat') + '</div>';
+      if (first) card.appendChild(row('First up · ' + esc(first.day.title), first));
+    } else if (now > last.t + 36e5) {
+      card.innerHTML = '<div class="today-head">Retreat complete</div><p class="row-sub">Carry it home. Choose a small, specific step and tell someone.</p>';
+    } else {
+      var dayTitle = cur ? cur.day.title : next.day.title;
+      card.innerHTML = '<div class="today-head">Day ' + ((cur || next).di + 1) + ' · ' + esc(dayTitle) + '</div>';
+      if (cur && cur.day === (next ? next.day : cur.day)) card.appendChild(row('Now', cur, 'now'));
+      else if (cur && !next) card.appendChild(row('Now', cur, 'now'));
+      if (next) card.appendChild(row(cur && cur.day !== next.day ? 'Tomorrow' : 'Next', next));
+      later.filter(function (e) { return next && e.day === next.day; }).slice(0, 3).forEach(function (e) { card.appendChild(row('Then', e, 'dim')); });
+    }
+    var all_btn = el('button', 'today-more', 'Full schedule'); all_btn.type = 'button';
+    all_btn.addEventListener('click', function () { push('schedule'); });
+    card.appendChild(all_btn);
+    g.appendChild(card);
+    return g;
   }
 
   /* Housing */
@@ -343,7 +393,8 @@
     navBack.hidden = stack.length < 2;
     if (stack.length > 1) {
       var prev = screens[stack[stack.length - 2]] || {};
-      navBackLabel.textContent = stack.length === 2 ? (tabById(activeTab).title || 'Back') : (prev.title || 'Back');
+      var lbl = stack.length === 2 ? (tabById(activeTab).title || 'Back') : (prev.title || 'Back');
+      navBackLabel.textContent = lbl.length > 9 ? 'Back' : lbl;
     }
     window.scrollTo(0, 0);
     history.replaceState(null, '', '#' + activeTab + '/' + stack.slice(1).join('/'));

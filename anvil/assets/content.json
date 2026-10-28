@@ -13,10 +13,10 @@
   },
   "tabs": [
     {
-      "id": "home",
-      "title": "Home",
+      "id": "today",
+      "title": "Today",
       "icon": "home",
-      "screen": "home"
+      "screen": "today"
     },
     {
       "id": "schedule",
@@ -25,92 +25,25 @@
       "screen": "schedule"
     },
     {
-      "id": "notes",
-      "title": "Notes",
+      "id": "sessions",
+      "title": "Sessions",
       "icon": "pen",
-      "screen": "notes"
-    },
-    {
-      "id": "packing",
-      "title": "Packing",
-      "icon": "check",
-      "screen": "packing"
+      "screen": "sessions"
     },
     {
       "id": "map",
       "title": "Map",
       "icon": "map",
       "screen": "map"
+    },
+    {
+      "id": "more",
+      "title": "More",
+      "icon": "more",
+      "screen": "more"
     }
   ],
   "screens": {
-    "home": {
-      "title": "See You This Week!",
-      "hero": {
-        "eyebrow": "The Anvil Academy / Fall Retreat 2026",
-        "sub": "Woodlands Camp | Cleveland, Georgia",
-        "image": "holdfast.png"
-      },
-      "sections": [
-        {
-          "header": "Peter",
-          "items": [
-            {
-              "title": "High Pointe 11",
-              "subtitle": "Cumming campus · High Pointe is #8 on the map",
-              "icon": "P",
-              "iconColor": "#2b5f75",
-              "screen": "cabin"
-            },
-            {
-              "title": "Check-in Wednesday",
-              "subtitle": "West Chapel (#11), 10:00-11:00 AM for first and second year",
-              "icon": "→",
-              "iconColor": "#5c7f3b",
-              "screen": "arrival"
-            },
-            {
-              "title": "Pickup Friday",
-              "subtitle": "Grab-and-go lunch 12:15 PM, departure 12:30 PM",
-              "icon": "←",
-              "iconColor": "#8a5a2b",
-              "screen": "arrival"
-            }
-          ]
-        },
-        {
-          "header": "Quick links",
-          "items": [
-            {
-              "title": "Address",
-              "subtitle": "1242 Old Blue Creek Road, Cleveland, GA 30528",
-              "icon": "◎",
-              "iconColor": "#5c7f3b",
-              "href": "https://maps.apple.com/?q=1242+Old+Blue+Creek+Road,+Cleveland,+GA+30528"
-            },
-            {
-              "title": "Weather outlook",
-              "subtitle": "Warm afternoons, chilly mornings",
-              "icon": "☀",
-              "iconColor": "#c98a00",
-              "screen": "weather"
-            },
-            {
-              "title": "Questions this week",
-              "subtitle": "Mr. Cass, staff and camp office",
-              "icon": "☎",
-              "iconColor": "#8e8e93",
-              "screen": "contacts"
-            }
-          ]
-        },
-        {
-          "type": "prose",
-          "header": "A note from the team",
-          "body": "Dear Anvil families,\n\nOur Fall Retreat is this week, October 28-30, and we are looking forward to being together! We are praying for three days of adventure, meaningful conversations, and time to grow in faith and brotherhood. We hope this will be a chance for you to step away from the usual routine, be present with one another, and make memories and commitments that you carry home.\n\nThis short guide has what you need to arrive ready. We cannot wait to see you at Woodlands!\n\n*The Anvil Academy Team*"
-        }
-      ]
-    },
     "arrival": {
       "title": "Arrival & Departure",
       "sections": [
@@ -329,7 +262,8 @@
                   "time": "1:15 PM",
                   "title": "Session 1 · HOLD FAST - HELD",
                   "where": "West Chapel",
-                  "kind": "session"
+                  "kind": "session",
+                  "screen": "session-1"
                 },
                 {
                   "time": "2:45 PM",
@@ -405,7 +339,8 @@
                   "time": "9:00 AM",
                   "title": "Session 2 · HOLD FAST - FORMED",
                   "where": "West Chapel",
-                  "kind": "session"
+                  "kind": "session",
+                  "screen": "session-2"
                 },
                 {
                   "time": "10:00 AM",
@@ -434,7 +369,8 @@
                   "time": "1:30 PM",
                   "title": "Session 3 · By year",
                   "kind": "session",
-                  "note": "First year: West Chapel\nSecond year: Old Chapel or East Chapel\nCore Training: Blue Creek basement meeting room"
+                  "note": "First year: West Chapel\nSecond year: Old Chapel or East Chapel\nCore Training: Blue Creek basement meeting room",
+                  "screen": "session-3"
                 },
                 {
                   "time": "2:45 PM",
@@ -447,7 +383,8 @@
                   "time": "5:00 PM",
                   "title": "Dads session",
                   "where": "West Chapel",
-                  "note": "Boys: free time in teacher-hosted zones"
+                  "note": "Boys: free time in teacher-hosted zones",
+                  "screen": "session-dads"
                 },
                 {
                   "time": "6:00 PM",
@@ -519,7 +456,8 @@
                   "time": "11:15 AM",
                   "title": "Session 4 · HOLD FAST - SENT",
                   "where": "West Chapel",
-                  "kind": "session"
+                  "kind": "session",
+                  "screen": "session-4"
                 },
                 {
                   "time": "12:15 PM",
@@ -533,7 +471,7 @@
               ]
             }
           ],
-          "footer": "Cumming (A1) schedule, from the printed Hold Fast booklet."
+          "footer": "Cumming (A1) schedule. Tap a session for its overview and notes."
         }
       ]
     },
@@ -701,213 +639,6 @@
         }
       ]
     },
-    "notes": {
-      "title": "Notes",
-      "lede": "Your retreat notebook, saved on this phone.",
-      "sections": [
-        {
-          "header": "Sessions",
-          "items": [
-            {
-              "title": "Session 1 · HELD",
-              "subtitle": "Anchor · Wednesday 1:15 PM",
-              "icon": "1",
-              "iconColor": "#2b5f75",
-              "screen": "notes-1"
-            },
-            {
-              "title": "Session 2 · FORMED",
-              "subtitle": "Brotherhood · Thursday 9:00 AM",
-              "icon": "2",
-              "iconColor": "#2b5f75",
-              "screen": "notes-2"
-            },
-            {
-              "title": "Session 3 · Anvil Year Breakouts",
-              "subtitle": "First year · Second year · Thursday 1:30 PM",
-              "icon": "3",
-              "iconColor": "#2b5f75",
-              "screen": "notes-3"
-            },
-            {
-              "title": "Session 4 · SENT",
-              "subtitle": "Mission · Friday 11:15 AM",
-              "icon": "4",
-              "iconColor": "#2b5f75",
-              "screen": "notes-4"
-            }
-          ]
-        },
-        {
-          "header": "Dads",
-          "items": [
-            {
-              "title": "Dads' Meeting",
-              "subtitle": "Dads' Session · Thursday 5:00 PM · West Chapel",
-              "icon": "D",
-              "iconColor": "#8a5a2b",
-              "screen": "notes-dads"
-            }
-          ]
-        },
-        {
-          "header": "Carry it home",
-          "items": [
-            {
-              "title": "Carry It Home",
-              "subtitle": "Anchor · Brotherhood · Mission",
-              "icon": "⌂",
-              "iconColor": "#5c7f3b",
-              "screen": "notes-home"
-            },
-            {
-              "title": "Choose Your Own Adventure",
-              "subtitle": "On-campus ideas and nearby outings",
-              "icon": "↗",
-              "iconColor": "#c98a00",
-              "screen": "adventure"
-            },
-            {
-              "title": "Notes",
-              "subtitle": "Free page",
-              "icon": "✎",
-              "iconColor": "#8e8e93",
-              "screen": "notes-free"
-            }
-          ]
-        }
-      ]
-    },
-    "notes-1": {
-      "title": "HELD / notes",
-      "lede": "Session 1 · Anchor",
-      "sections": [
-        {
-          "type": "notes",
-          "id": "s1",
-          "fields": [
-            {
-              "id": "scripture",
-              "label": "Scripture / main idea",
-              "rows": 3
-            },
-            {
-              "id": "hearing",
-              "label": "What I am hearing",
-              "rows": 6
-            },
-            {
-              "id": "step",
-              "label": "One step to practice",
-              "rows": 2
-            }
-          ]
-        }
-      ]
-    },
-    "notes-2": {
-      "title": "FORMED / notes",
-      "lede": "Session 2 · Brotherhood",
-      "sections": [
-        {
-          "type": "notes",
-          "id": "s2",
-          "fields": [
-            {
-              "id": "scripture",
-              "label": "Scripture / main idea",
-              "rows": 3
-            },
-            {
-              "id": "hearing",
-              "label": "What I am hearing",
-              "rows": 6
-            },
-            {
-              "id": "step",
-              "label": "One step to practice",
-              "rows": 2
-            }
-          ]
-        }
-      ]
-    },
-    "notes-3": {
-      "title": "Anvil Year Breakouts",
-      "lede": "Session 3 · Thursday 1:30 PM · First year · Second year",
-      "sections": [
-        {
-          "type": "notes",
-          "id": "s3",
-          "fields": [
-            {
-              "id": "group",
-              "label": "My group / leader",
-              "rows": 1
-            },
-            {
-              "id": "truth",
-              "label": "A truth to remember",
-              "rows": 4
-            },
-            {
-              "id": "question",
-              "label": "A question to keep asking",
-              "rows": 4
-            },
-            {
-              "id": "resp",
-              "label": "A responsibility to own",
-              "rows": 3
-            }
-          ]
-        }
-      ]
-    },
-    "notes-4": {
-      "title": "SENT / notes",
-      "lede": "Session 4 · Mission · Closing Commissioning",
-      "sections": [
-        {
-          "type": "notes",
-          "id": "s4",
-          "fields": [
-            {
-              "id": "scripture",
-              "label": "Scripture / main idea",
-              "rows": 3
-            },
-            {
-              "id": "hearing",
-              "label": "What I am hearing",
-              "rows": 6
-            },
-            {
-              "id": "step",
-              "label": "One step to practice",
-              "rows": 2
-            }
-          ]
-        }
-      ]
-    },
-    "notes-dads": {
-      "title": "Dads' Meeting",
-      "lede": "Dads' Session · Thursday 5:00 PM · West Chapel",
-      "sections": [
-        {
-          "type": "notes",
-          "id": "dads",
-          "fields": [
-            {
-              "id": "notes",
-              "label": "Notes",
-              "rows": 14
-            }
-          ]
-        }
-      ]
-    },
     "notes-home": {
       "title": "Carry It Home",
       "lede": "Choose a small, specific step. Tell someone. Make a plan to return to this conversation together.",
@@ -1014,6 +745,440 @@
             }
           ],
           "footer": "Checked items are saved on this phone."
+        }
+      ]
+    },
+    "today": {
+      "title": "Hold Fast",
+      "hero": {
+        "eyebrow": "The Anvil Academy / Fall Retreat 2026",
+        "sub": "Woodlands Camp | Cleveland, Georgia",
+        "image": "holdfast.png"
+      },
+      "sections": [
+        {
+          "type": "today"
+        },
+        {
+          "header": "Peter",
+          "items": [
+            {
+              "title": "High Pointe 11",
+              "subtitle": "Cumming campus · building #8 on the map",
+              "icon": "P",
+              "iconColor": "#2b5f75",
+              "screen": "cabin"
+            }
+          ]
+        },
+        {
+          "header": "Quick links",
+          "items": [
+            {
+              "title": "Questions this week",
+              "subtitle": "Mr. Cass, staff and camp office",
+              "icon": "☎",
+              "iconColor": "#8e8e93",
+              "screen": "contacts"
+            },
+            {
+              "title": "Weather outlook",
+              "subtitle": "Warm afternoons, chilly mornings",
+              "icon": "☀",
+              "iconColor": "#c98a00",
+              "screen": "weather"
+            },
+            {
+              "title": "Carry It Home",
+              "subtitle": "Anchor · Brotherhood · Mission",
+              "icon": "⌂",
+              "iconColor": "#5c7f3b",
+              "screen": "notes-home"
+            }
+          ]
+        }
+      ]
+    },
+    "sessions": {
+      "title": "Sessions",
+      "lede": "Four main sessions on one theme: Hold Fast. Each has an overview and your notes.",
+      "sections": [
+        {
+          "header": "Main sessions",
+          "items": [
+            {
+              "title": "HELD",
+              "subtitle": "Session 1 · Anchor · Wed 1:15 PM · West Chapel",
+              "icon": "1",
+              "iconColor": "#2b5f75",
+              "screen": "session-1"
+            },
+            {
+              "title": "FORMED",
+              "subtitle": "Session 2 · Brotherhood · Thu 9:00 AM · West Chapel",
+              "icon": "2",
+              "iconColor": "#2b5f75",
+              "screen": "session-2"
+            },
+            {
+              "title": "Anvil Year Breakouts",
+              "subtitle": "Session 3 · By year · Thu 1:30 PM",
+              "icon": "3",
+              "iconColor": "#2b5f75",
+              "screen": "session-3"
+            },
+            {
+              "title": "SENT",
+              "subtitle": "Session 4 · Mission · Fri 11:15 AM · West Chapel",
+              "icon": "4",
+              "iconColor": "#2b5f75",
+              "screen": "session-4"
+            }
+          ]
+        },
+        {
+          "header": "Dads",
+          "items": [
+            {
+              "title": "Dads' Meeting",
+              "subtitle": "Thu 5:00 PM · West Chapel",
+              "icon": "D",
+              "iconColor": "#8a5a2b",
+              "screen": "session-dads"
+            }
+          ]
+        },
+        {
+          "header": "Carry it home",
+          "items": [
+            {
+              "title": "Carry It Home",
+              "subtitle": "Anchor · Brotherhood · Mission",
+              "icon": "⌂",
+              "iconColor": "#5c7f3b",
+              "screen": "notes-home"
+            },
+            {
+              "title": "Choose Your Own Adventure",
+              "subtitle": "On-campus ideas and nearby outings",
+              "icon": "↗",
+              "iconColor": "#c98a00",
+              "screen": "adventure"
+            },
+            {
+              "title": "Notes",
+              "subtitle": "Free page",
+              "icon": "✎",
+              "iconColor": "#8e8e93",
+              "screen": "notes-free"
+            }
+          ]
+        }
+      ]
+    },
+    "session-1": {
+      "title": "HELD",
+      "lede": "Session 1 · Anchor",
+      "sections": [
+        {
+          "header": "When and where",
+          "items": [
+            {
+              "title": "Wednesday 1:15 PM",
+              "value": "West Chapel"
+            },
+            {
+              "title": "Everyone together",
+              "subtitle": "First session after lunch and orientation"
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "header": "Overview",
+          "body": "The first word of the weekend is **Held**. Before anything is asked of us, we are anchored: held by God before we hold on to anything ourselves.\n\nListen for the scripture and main idea, write down what you are hearing, and leave with one step to practice. The Carry It Home page asks for **a truth I will return to**; this session is where it usually starts."
+        },
+        {
+          "type": "notes",
+          "id": "s1",
+          "fields": [
+            {
+              "id": "scripture",
+              "label": "Scripture / main idea",
+              "rows": 3
+            },
+            {
+              "id": "hearing",
+              "label": "What I am hearing",
+              "rows": 6
+            },
+            {
+              "id": "step",
+              "label": "One step to practice",
+              "rows": 2
+            }
+          ]
+        }
+      ]
+    },
+    "session-2": {
+      "title": "FORMED",
+      "lede": "Session 2 · Brotherhood",
+      "sections": [
+        {
+          "header": "When and where",
+          "items": [
+            {
+              "title": "Thursday 9:00 AM",
+              "value": "West Chapel"
+            },
+            {
+              "title": "Everyone together",
+              "subtitle": "Right after breakfast; field activities follow"
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "header": "Overview",
+          "body": "The second word is **Formed**. Men are shaped in brotherhood: iron sharpening iron, the anvil and the hammer. This session is about the people who form us and the people we form.\n\nFor Carry It Home, this is the session behind **a relationship I will invest in**."
+        },
+        {
+          "type": "notes",
+          "id": "s2",
+          "fields": [
+            {
+              "id": "scripture",
+              "label": "Scripture / main idea",
+              "rows": 3
+            },
+            {
+              "id": "hearing",
+              "label": "What I am hearing",
+              "rows": 6
+            },
+            {
+              "id": "step",
+              "label": "One step to practice",
+              "rows": 2
+            }
+          ]
+        }
+      ]
+    },
+    "session-3": {
+      "title": "Anvil Year Breakouts",
+      "lede": "Session 3 · By year · Thursday 1:30 PM",
+      "sections": [
+        {
+          "header": "When and where",
+          "items": [
+            {
+              "title": "First year",
+              "value": "West Chapel"
+            },
+            {
+              "title": "Second year",
+              "value": "Old Chapel or East Chapel"
+            },
+            {
+              "title": "Core Training",
+              "value": "Blue Creek basement"
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "header": "Overview",
+          "body": "Smaller groups by Anvil year, led by campus leaders. Write down your group and leader, then capture **a truth to remember**, **a question to keep asking**, and **a responsibility to own**."
+        },
+        {
+          "type": "notes",
+          "id": "s3",
+          "fields": [
+            {
+              "id": "group",
+              "label": "My group / leader",
+              "rows": 1
+            },
+            {
+              "id": "truth",
+              "label": "A truth to remember",
+              "rows": 4
+            },
+            {
+              "id": "question",
+              "label": "A question to keep asking",
+              "rows": 4
+            },
+            {
+              "id": "resp",
+              "label": "A responsibility to own",
+              "rows": 3
+            }
+          ]
+        }
+      ]
+    },
+    "session-4": {
+      "title": "SENT",
+      "lede": "Session 4 · Mission · Closing Commissioning",
+      "sections": [
+        {
+          "header": "When and where",
+          "items": [
+            {
+              "title": "Friday 11:15 AM",
+              "value": "West Chapel"
+            },
+            {
+              "title": "Everyone together",
+              "subtitle": "Final session; grab-and-go lunch follows at 12:15 PM"
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "header": "Overview",
+          "body": "The last word is **Sent**. Held and formed, we are commissioned to go home on mission. This closing session sends everyone back to Cumming with something to carry.\n\nFor Carry It Home, this is the session behind **a responsibility I will take up**. Fill in Carry It Home before you leave West Chapel."
+        },
+        {
+          "type": "notes",
+          "id": "s4",
+          "fields": [
+            {
+              "id": "scripture",
+              "label": "Scripture / main idea",
+              "rows": 3
+            },
+            {
+              "id": "hearing",
+              "label": "What I am hearing",
+              "rows": 6
+            },
+            {
+              "id": "step",
+              "label": "One step to practice",
+              "rows": 2
+            }
+          ]
+        },
+        {
+          "header": "Before you leave",
+          "items": [
+            {
+              "title": "Carry It Home",
+              "subtitle": "Choose a small, specific step. Tell someone.",
+              "icon": "⌂",
+              "iconColor": "#5c7f3b",
+              "screen": "notes-home"
+            }
+          ]
+        }
+      ]
+    },
+    "session-dads": {
+      "title": "Dads' Meeting",
+      "lede": "Dads' Session · Thursday 5:00 PM · West Chapel",
+      "sections": [
+        {
+          "header": "When and where",
+          "items": [
+            {
+              "title": "Thursday 5:00 PM",
+              "value": "West Chapel"
+            },
+            {
+              "title": "Boys",
+              "subtitle": "Free time in teacher-hosted zones"
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "header": "Overview",
+          "body": "Dads meet on their own while the boys have free time. Bring the notebook. The Choose Your Own Adventure ideas are good to look at before this meeting so you can pick one with Peter afterward."
+        },
+        {
+          "type": "notes",
+          "id": "dads",
+          "fields": [
+            {
+              "id": "notes",
+              "label": "Notes",
+              "rows": 12
+            }
+          ]
+        },
+        {
+          "header": "Afterward",
+          "items": [
+            {
+              "title": "Choose Your Own Adventure",
+              "subtitle": "On-campus ideas and nearby outings",
+              "icon": "↗",
+              "iconColor": "#c98a00",
+              "screen": "adventure"
+            }
+          ]
+        }
+      ]
+    },
+    "more": {
+      "title": "More",
+      "sections": [
+        {
+          "header": "Peter",
+          "items": [
+            {
+              "title": "High Pointe 11",
+              "subtitle": "Cabin and bunkmates",
+              "icon": "P",
+              "iconColor": "#2b5f75",
+              "screen": "cabin"
+            }
+          ]
+        },
+        {
+          "header": "Getting there and back",
+          "items": [
+            {
+              "title": "Arrival & departure",
+              "icon": "→",
+              "iconColor": "#5c7f3b",
+              "screen": "arrival"
+            },
+            {
+              "title": "Address",
+              "subtitle": "1242 Old Blue Creek Road, Cleveland, GA 30528",
+              "icon": "◎",
+              "iconColor": "#5c7f3b",
+              "href": "https://maps.apple.com/?q=1242+Old+Blue+Creek+Road,+Cleveland,+GA+30528"
+            },
+            {
+              "title": "Packing list",
+              "icon": "✓",
+              "iconColor": "#2b5f75",
+              "screen": "packing"
+            },
+            {
+              "title": "Weather outlook",
+              "icon": "☀",
+              "iconColor": "#c98a00",
+              "screen": "weather"
+            },
+            {
+              "title": "Questions this week",
+              "icon": "☎",
+              "iconColor": "#8e8e93",
+              "screen": "contacts"
+            }
+          ]
+        },
+        {
+          "type": "prose",
+          "header": "A note from the team",
+          "body": "Dear Anvil families,\n\nOur Fall Retreat is this week, October 28-30, and we are looking forward to being together! We are praying for three days of adventure, meaningful conversations, and time to grow in faith and brotherhood. We hope this will be a chance for you to step away from the usual routine, be present with one another, and make memories and commitments that you carry home.\n\nThis short guide has what you need to arrive ready. We cannot wait to see you at Woodlands!\n\n*The Anvil Academy Team*"
         }
       ]
     }
