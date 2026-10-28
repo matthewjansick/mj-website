@@ -97,6 +97,7 @@
       case 'notes': return renderNotes(sec, screenId);
       case 'today': return renderToday(sec);
       case 'sync': return renderSync(sec);
+      case 'cover': return renderCover(sec);
       default:
         var g = group(sec), list = el('div', 'list');
         (sec.items || []).forEach(function (it) { list.appendChild(renderRow(it)); });
@@ -374,6 +375,22 @@
     bar.appendChild(share);
     g.appendChild(bar);
     g.appendChild(el('div', 'group-footer', 'Saved on this phone as you type. Save sends it to jansick.com so it survives and shows on other devices.'));
+    return g;
+  }
+
+  /* Session cover card, like the dark pages in the booklet */
+  var EMBLEMS = {
+    anchor: '<svg viewBox="0 0 64 64"><circle cx="32" cy="10" r="5"/><path d="M32 15v40"/><path d="M18 24h28"/><path d="M10 38c2 12 12 18 22 18s20-6 22-18"/><path d="M10 38l-4 6M10 38l6 2M54 38l4 6M54 38l-6 2"/></svg>',
+    hands: '<svg viewBox="0 0 64 64"><path d="M2 30h20v8H2" stroke-width="3"/><path d="M62 30H42v8h20" stroke-width="3"/><rect x="20" y="25" width="16" height="18" rx="6"/><rect x="28" y="25" width="16" height="18" rx="6"/><path d="M24 31h8M24 35h8M24 39h6"/><path d="M34 30l6 0M34 34l6 0"/></svg>',
+    torch: '<svg viewBox="0 0 64 64"><path d="M32 4c6 6 8 10 6 16-2 4-8 4-8 10"/><path d="M32 10c-4 5-5 8-3 12"/><path d="M22 30h20l-3 6H25z"/><path d="M29 36l1 24h4l1-24"/></svg>'
+  };
+  function renderCover(sec) {
+    var g = el('div', 'group');
+    var cv = el('div', 'cover');
+    cv.innerHTML = '<div class="cover-num">Session ' + esc(sec.num) + '</div><div class="cover-title">' + esc(sec.title) + '</div><div class="cover-theme">' + esc(sec.theme) + '</div>' +
+      '<div class="cover-emblem">' + (EMBLEMS[sec.emblem] || '') + '<span class="cover-ribbon">' + esc(sec.theme) + '</span></div>' +
+      '<p class="cover-tag">' + esc(sec.tagline) + '</p>';
+    g.appendChild(cv);
     return g;
   }
 

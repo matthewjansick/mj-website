@@ -808,14 +808,14 @@
           "items": [
             {
               "title": "HELD",
-              "subtitle": "Session 1 · Anchor · Wed 1:15 PM · West Chapel",
+              "subtitle": "Anchor · You can hold fast because you are held.",
               "icon": "1",
               "iconColor": "#2b5f75",
               "screen": "session-1"
             },
             {
               "title": "FORMED",
-              "subtitle": "Session 2 · Brotherhood · Thu 9:00 AM · West Chapel",
+              "subtitle": "Brotherhood · No man is formed alone.",
               "icon": "2",
               "iconColor": "#2b5f75",
               "screen": "session-2"
@@ -829,7 +829,7 @@
             },
             {
               "title": "SENT",
-              "subtitle": "Session 4 · Mission · Fri 11:15 AM · West Chapel",
+              "subtitle": "Mission · Become a man who is faithful to the end.",
               "icon": "4",
               "iconColor": "#2b5f75",
               "screen": "session-4"
@@ -881,6 +881,14 @@
       "lede": "Session 1 · Anchor",
       "sections": [
         {
+          "type": "cover",
+          "num": "01",
+          "title": "HELD",
+          "theme": "Anchor",
+          "tagline": "You can hold fast because you are held.",
+          "emblem": "anchor"
+        },
+        {
           "header": "When and where",
           "items": [
             {
@@ -896,7 +904,7 @@
         {
           "type": "prose",
           "header": "Overview",
-          "body": "The first word of the weekend is **Held**. Before anything is asked of us, we are anchored: held by God before we hold on to anything ourselves.\n\nListen for the scripture and main idea, write down what you are hearing, and leave with one step to practice. The Carry It Home page asks for **a truth I will return to**; this session is where it usually starts."
+          "body": "Session 1 opens the weekend with **Held**. The anchor is the sign: you can hold fast because you are held first.\n\nListen for the scripture and main idea, write what you are hearing, and leave with one step to practice. On Carry It Home this becomes **a truth I will return to**."
         },
         {
           "type": "notes",
@@ -926,6 +934,14 @@
       "lede": "Session 2 · Brotherhood",
       "sections": [
         {
+          "type": "cover",
+          "num": "02",
+          "title": "FORMED",
+          "theme": "Brotherhood",
+          "tagline": "No man is formed alone.",
+          "emblem": "hands"
+        },
+        {
           "header": "When and where",
           "items": [
             {
@@ -941,7 +957,7 @@
         {
           "type": "prose",
           "header": "Overview",
-          "body": "The second word is **Formed**. Men are shaped in brotherhood: iron sharpening iron, the anvil and the hammer. This session is about the people who form us and the people we form.\n\nFor Carry It Home, this is the session behind **a relationship I will invest in**."
+          "body": "Session 2 is **Formed**. The sign is clasped arms: no man is formed alone.\n\nOn Carry It Home this becomes **a relationship I will invest in**."
         },
         {
           "type": "notes",
@@ -990,7 +1006,7 @@
         {
           "type": "prose",
           "header": "Overview",
-          "body": "Smaller groups by Anvil year, led by campus leaders. Write down your group and leader, then capture **a truth to remember**, **a question to keep asking**, and **a responsibility to own**."
+          "body": "Smaller groups by Anvil year. Write down your group and leader, then capture **a truth to remember**, **a question to keep asking**, and **a responsibility to own**."
         },
         {
           "type": "notes",
@@ -1025,6 +1041,14 @@
       "lede": "Session 4 · Mission · Closing Commissioning",
       "sections": [
         {
+          "type": "cover",
+          "num": "04",
+          "title": "SENT",
+          "theme": "Mission",
+          "tagline": "Become a man who is faithful to the end.",
+          "emblem": "torch"
+        },
+        {
           "header": "When and where",
           "items": [
             {
@@ -1040,7 +1064,7 @@
         {
           "type": "prose",
           "header": "Overview",
-          "body": "The last word is **Sent**. Held and formed, we are commissioned to go home on mission. This closing session sends everyone back to Cumming with something to carry.\n\nFor Carry It Home, this is the session behind **a responsibility I will take up**. Fill in Carry It Home before you leave West Chapel."
+          "body": "Session 4 closes the weekend with **Sent**. The sign is a torch: become a man who is faithful to the end.\n\nOn Carry It Home this becomes **a responsibility I will take up**. Fill it in before leaving West Chapel."
         },
         {
           "type": "notes",
@@ -1097,7 +1121,7 @@
         {
           "type": "prose",
           "header": "Overview",
-          "body": "Dads meet on their own while the boys have free time. Bring the notebook. The Choose Your Own Adventure ideas are good to look at before this meeting so you can pick one with Peter afterward."
+          "body": "Dads meet on their own at West Chapel while the boys have free time in teacher-hosted zones. Bring the notebook. Look over Choose Your Own Adventure beforehand so you can pick one with Peter afterward."
         },
         {
           "type": "notes",
