@@ -1,0 +1,49 @@
+{
+  "title": "Learn Python",
+  "tagline": "Real Python, right in your browser. Build games and tools from the very first lesson.",
+  "sections": [
+    {
+      "title": "Getting started",
+      "lessons": [
+        { "id": "01-hello", "title": "Hello, Python", "blurb": "Run your first program and learn what print does.", "minutes": 20 },
+        { "id": "02-variables", "title": "Variables and numbers", "blurb": "Store things, do math, and name them well.", "minutes": 30 },
+        { "id": "03-strings", "title": "Strings", "blurb": "Text: joining it, measuring it, and f-strings.", "minutes": 30 },
+        { "id": "04-input", "title": "Talking to the user", "blurb": "input(), converting text to numbers, and your first real tool.", "minutes": 30 }
+      ]
+    },
+    {
+      "title": "Decisions and repetition",
+      "lessons": [
+        { "id": "05-if", "title": "Making decisions", "blurb": "if, elif, else, comparisons, and True/False.", "minutes": 40 },
+        { "id": "06-for", "title": "Repeating with for", "blurb": "Loops, range(), and counting things up.", "minutes": 40 },
+        { "id": "07-while", "title": "Repeating with while", "blurb": "Loop until something happens. Build a guessing game.", "minutes": 40 }
+      ]
+    },
+    {
+      "title": "Organizing data and code",
+      "lessons": [
+        { "id": "08-lists", "title": "Lists", "blurb": "Collections of things: add, remove, sort, loop.", "minutes": 45 },
+        { "id": "09-functions", "title": "Functions", "blurb": "Name a chunk of code and reuse it.", "minutes": 45 },
+        { "id": "10-functions-2", "title": "Functions, level 2", "blurb": "Return values, defaults, scope, and testing your functions.", "minutes": 45 },
+        { "id": "11-dictionaries", "title": "Dictionaries", "blurb": "Look things up by name instead of by position.", "minutes": 45 }
+      ]
+    },
+    {
+      "title": "Bigger ideas",
+      "lessons": [
+        { "id": "12-random", "title": "Randomness and modules", "blurb": "import random, math, and making games unpredictable.", "minutes": 35 },
+        { "id": "13-errors", "title": "Errors and debugging", "blurb": "Read tracebacks like a pro and handle problems with try/except.", "minutes": 40 },
+        { "id": "14-strings-2", "title": "Strings, level 2", "blurb": "Slicing, splitting, joining, and a word game.", "minutes": 45 },
+        { "id": "15-nested-data", "title": "Nested data", "blurb": "Lists of dictionaries, sorting, and a mini database.", "minutes": 50 },
+        { "id": "16-classes", "title": "Classes and objects", "blurb": "Make your own types of things, with their own data and actions.", "minutes": 55 },
+        { "id": "17-files", "title": "Saving data", "blurb": "Read and write files, and store game saves as JSON.", "minutes": 40 }
+      ]
+    },
+    {
+      "title": "Capstone",
+      "lessons": [
+        { "id": "18-adventure", "title": "Build a text adventure", "blurb": "Put everything together into a game you design.", "minutes": 120 }
+      ]
+    }
+  ]
+}
